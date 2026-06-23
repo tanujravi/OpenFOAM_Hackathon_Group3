@@ -1,6 +1,5 @@
 FoamFile { version 2.0; format ascii; class dictionary; object fvSchemes; }
-// 1st-ORDER (bounded) schemes: upwind on k/epsilon keeps turbulence bounded on the
-// stiff terrain mesh. Use for the initial run; then restart with fvSchemes_2ndorder.
+// 2nd-ORDER schemes (accurate). Use as a RESTART after the 1st-order warm-up.
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 ddtSchemes      { default steadyState; }
 gradSchemes
@@ -15,9 +14,10 @@ divSchemes
 {
     default          none;
     div(phi,U)       bounded Gauss linearUpwindV limited;
-    div(phi,k)       bounded Gauss upwind;
-    div(phi,epsilon) bounded Gauss upwind;
-    div(phi,omega)   bounded Gauss upwind;
+    turbulence       bounded Gauss limitedLinear 1;
+    div(phi,k)       $turbulence;
+    div(phi,epsilon) $turbulence;
+    div(phi,omega)   $turbulence;
     div((nuEff*dev2(T(grad(U))))) Gauss linear;
 }
 laplacianSchemes     { default Gauss linear limited 0.5; }
