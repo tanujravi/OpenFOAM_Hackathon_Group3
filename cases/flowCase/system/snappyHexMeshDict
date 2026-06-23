@@ -23,6 +23,16 @@ x_max   1850;
 y_max   1300;
 z_max   220.0;
 
+// Tight city box: covers the ROI buildings footprint + 200 m margin.
+// Used for intermediate (level 3) refinement so the city gets ~17 m cells
+// without forcing that resolution onto the whole 6.3 km terrain.
+cx_min -1750;
+cy_min -1450;
+cz_min    -5;
+cx_max  1850;
+cy_max  1300;
+cz_max   250.0;
+
 K #calc "($z_max - $z_min)/$z_max";
 F 0.3;
 
@@ -63,6 +73,14 @@ geometry
         max ($x2_max $y2_max $z2_max);
     }
 
+    // Tight city box: intermediate refinement zone around the ROI buildings.
+    cityBox
+    {
+        type searchableBox;
+        min ($cx_min $cy_min $cz_min);
+        max ($cx_max $cy_max $cz_max);
+    }
+
     Mesh_Buildings
     {
         file "Mesh_Buildings.obj";
@@ -99,7 +117,7 @@ castellatedMeshControls
     (
         {
             file "Mesh_Buildings.eMesh";
-            level 5;
+            level 6;   // match the building surface max level
         }
     );
 
@@ -112,7 +130,8 @@ castellatedMeshControls
             {
                 Buildings
                 {
-                    level (5 5);
+                    // Level 6 (~2 m cells) on building walls; edge features also at 6.
+                    level (5 6);
                     patchInfo { type wall; }
                 }
             }
@@ -125,10 +144,10 @@ castellatedMeshControls
             {
                 Terrain
                 {
-                    // Terrain spans the whole 6.3 km footprint -> level 4 (not 5)
-                    // to keep the cell count sane; raise locally via the
-                    // distance region below if the ground needs more detail.
-                    level (4 4);
+                    // Far-field terrain at level 2 (~33 m cells) — the cityBox
+                    // refinement region and distance rules bring it to level 3-4
+                    // inside the ROI without blowing up cell count over 6.3 km.
+                    level (2 2);
                     patchInfo { type wall; }
                 }
             }
@@ -139,28 +158,42 @@ castellatedMeshControls
 
     refinementRegions
     {
-        box1
-        {
-            mode inside;
-            levels ((1E15 2));
-        }
-
+        // Far-field annular ring: level 1 (~67 m) — coarse, just captures bulk flow.
         box2
         {
             mode inside;
             levels ((1E15 1));
         }
 
+        // Intermediate ring around the city: level 2 (~33 m).
+        box1
+        {
+            mode inside;
+            levels ((1E15 2));
+        }
+
+        // Tight city box: level 3 (~17 m).  Gives decent resolution on streets and
+        // terrain inside the ROI without the level-4 blanket that was on all terrain.
+        cityBox
+        {
+            mode inside;
+            levels ((1E15 3));
+        }
+
+        // Buildings: graduated distance refinement — finest very close (level 6, ~2 m),
+        // then stepping back to level 3 at ~50 m to match the city-box background.
         Mesh_Buildings
         {
             mode distance;
-            levels ((4.0 5) (12.0 4) (25.0 3));
+            levels ((2.0 6) (8.0 5) (20.0 4) (50.0 3));
         }
 
+        // Terrain: only needs moderate near-surface refinement because the city-box
+        // and building distance rules already cover the ROI ground area.
         Mesh_Terrain
         {
             mode distance;
-            levels ((5.0 4) (15.0 3));
+            levels ((3.0 3) (12.0 2));
         }
     }
 
