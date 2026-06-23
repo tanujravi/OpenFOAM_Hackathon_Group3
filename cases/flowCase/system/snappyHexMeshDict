@@ -172,13 +172,12 @@ castellatedMeshControls
             levels ((1E15 2));
         }
 
-        // Tight city box: level 4 (~8 m).  The inner blockMesh square has 133 m base
-        // cells vs ~60 m in the outer ring, so level 4 here equalises the terrain
-        // surface cells (~8 m) with the outer ring's distance-refined ~8 m cells.
+        // Tight city box: level 3 (~17 m).  Gives decent resolution on streets and
+        // terrain inside the ROI without blowing up cell count.
         cityBox
         {
             mode inside;
-            levels ((1E15 4));
+            levels ((1E15 3));
         }
 
         // Buildings: graduated distance refinement — finest very close (level 6, ~2 m),
