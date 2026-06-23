@@ -1,0 +1,50 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2312                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      omega;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 0 -1 0 0 0 0];
+
+internalField   uniform 0.62;
+
+boundaryField
+{
+    inlet
+    {
+        // Atmospheric ABL specific-dissipation inlet (built-in, no compilation).
+        type            atmBoundaryLayerInletOmega;
+        #include        "include/ABLConditions"
+        value           uniform 0.62;
+    }
+
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 0.62;
+        value           uniform 0.62;
+    }
+
+    top         { type slip; }
+
+    lowerWall   { type omegaWallFunction; value uniform 0.62; }
+    street1     { type omegaWallFunction; value uniform 0.62; }
+    street2     { type omegaWallFunction; value uniform 0.62; }
+    street3     { type omegaWallFunction; value uniform 0.62; }
+    buildings   { type omegaWallFunction; value uniform 0.62; }
+
+    frontAndBack { type empty; }
+}
+
+
+// ************************************************************************* //

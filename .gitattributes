@@ -1,0 +1,15 @@
+# Normalise to LF on checkout so Windows-edited scripts/dicts run on the Linux
+# cluster (CRLF in a .sh or m4 dict breaks there).
+* text=auto eol=lf
+
+*.sh   text eol=lf
+*.py   text eol=lf
+*.m4   text eol=lf
+*.csv  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+
+# OpenFOAM dicts / fields are text -> LF
+0/*        text eol=lf
+system/*   text eol=lf
+constant/* text eol=lf

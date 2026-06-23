@@ -1,0 +1,49 @@
+# ============================================================================
+#  .gitignore  --  Guimaraes air-quality OpenFOAM workflow
+#  Keeps: tools/, system dicts, 0/ fields, geo/ inputs, provided CSV/OBJ,
+#         READMEs, run scripts, results tables.
+#  Drops: OpenFOAM runtime (regenerable), oversized inputs, caches.
+# ============================================================================
+
+# ---- OpenFOAM parallel decomposition (NEVER push) -------------------------
+processor*/
+
+# ---- solver time directories (keep 0/ and constant/) ----------------------
+# ignore numeric time dirs: 1, 2, ... 2000, and fractional 0.5 etc.
+[1-9]*/
+0.[0-9]*/
+
+# ---- post-processing & solver bookkeeping ---------------------------------
+postProcessing/
+*.foam
+*.OpenFOAM
+log.*
+logs/
+*.log
+dynamicCode/
+
+# ---- mesh & snappy intermediates (rebuild with runallgeo.sh) --------------
+constant/polyMesh/
+constant/extendedFeatureEdgeMesh/
+constant/triSurface/*.eMesh
+savedMesh/
+# big geometry copied into triSurface by runallgeo.sh (lives in geo/ already)
+constant/triSurface/Mesh_*.obj
+
+# ---- heavy field dumps in results (keep the CSV/txt tables + pp_*) ---------
+results/**/T_*
+
+# ---- Python / workflow caches ---------------------------------------------
+__pycache__/
+*.pyc
+.snakemake/
+
+# ---- too big for GitHub (>100 MB) or not needed to run current cases ------
+canopy/merged.obj
+bigger_terrain_results/
+
+# ---- OS / editor cruft ----------------------------------------------------
+.DS_Store
+*~
+.vscode/
+.idea/

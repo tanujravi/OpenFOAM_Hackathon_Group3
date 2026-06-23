@@ -1,0 +1,2 @@
+Mesh_Buildings_0.obj to Mesh_Buildings_5.obj comprise the region of interest
+Mesh_Buildings_6.obj are "far field" buildings in case it is needed for something

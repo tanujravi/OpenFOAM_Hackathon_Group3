@@ -1,0 +1,73 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2312                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volVectorField;
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (3.33 0 0);
+
+boundaryField
+{
+    inlet
+    {
+        // ---- Parabolic ABL inlet via runtime EXPRESSION (no compilation) --------
+        // exprFixedValue is a fixedValue-type BC: it sets the patch value from an
+        // expression and does NOT read the face flux phi (unlike the inletOutlet-
+        // based atmBoundaryLayerInletVelocity, kept commented below).
+        //   Ux(y) = Uref*(2*yn - yn^2),  yn = min(y/delta, 1)  -> 0 at ground, Uref aloft
+        // Uref is still pulled from include/ABLConditions, so the optimiser's
+        // Uref injection keeps working.
+        type            exprFixedValue;
+        #include        "include/ABLConditions"     // provides Uref (the wind-speed knob)
+        variables
+        (
+            "Uw    = $Uref"
+            "delta = 120.0"
+            "yn    = min(max(pos().y()/delta, 0.0), 1.0)"
+        );
+        valueExpr       "Uw*vector(2*yn - yn*yn, 0, 0)";
+        value           uniform (3.33 0 0);
+
+        // ---- Previous BC: built-in atmospheric log-law (requires phi) ----------
+        // type            atmBoundaryLayerInletVelocity;
+        // #include        "include/ABLConditions"
+        // value           uniform (5 0 0);
+    }
+
+    outlet
+    {
+        type            pressureInletOutletVelocity;
+        value           uniform (0 0 0);
+    }
+
+    top
+    {
+        type            slip;
+    }
+
+    lowerWall   { type noSlip; }
+    street1     { type noSlip; }
+    street2     { type noSlip; }
+    street3     { type noSlip; }
+    buildings   { type noSlip; }
+
+    frontAndBack
+    {
+        type            empty;
+    }
+}
+
+
+// ************************************************************************* //

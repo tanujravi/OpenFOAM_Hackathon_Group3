@@ -1,0 +1,66 @@
+[
+  {
+    "id": "receptor1",
+    "n_faces": 1468,
+    "n_verts": 736,
+    "centroid_recentred": [
+      -1261.37,
+      -403.29,
+      49.86
+    ],
+    "centroid_utm": [
+      -14413.99,
+      197031.44,
+      192.54
+    ],
+    "site_name": "TBD (confirm on map)"
+  },
+  {
+    "id": "receptor2",
+    "n_faces": 800,
+    "n_verts": 402,
+    "centroid_recentred": [
+      273.49,
+      -95.68,
+      67.03
+    ],
+    "centroid_utm": [
+      -12879.13,
+      197339.06,
+      209.71
+    ],
+    "site_name": "TBD (confirm on map)"
+  },
+  {
+    "id": "receptor3",
+    "n_faces": 796,
+    "n_verts": 398,
+    "centroid_recentred": [
+      -533.06,
+      -141.57,
+      52.87
+    ],
+    "centroid_utm": [
+      -13685.68,
+      197293.17,
+      195.55
+    ],
+    "site_name": "TBD (confirm on map)"
+  },
+  {
+    "id": "receptor4",
+    "n_faces": 632,
+    "n_verts": 318,
+    "centroid_recentred": [
+      1559.87,
+      635.38,
+      124.26
+    ],
+    "centroid_utm": [
+      -11592.75,
+      198070.12,
+      266.93
+    ],
+    "site_name": "TBD (confirm on map)"
+  }
+]

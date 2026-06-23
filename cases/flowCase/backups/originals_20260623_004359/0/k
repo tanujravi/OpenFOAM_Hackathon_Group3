@@ -1,0 +1,50 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2312                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      k;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform 0.375;
+
+boundaryField
+{
+    inlet
+    {
+        // Atmospheric ABL TKE inlet (built-in, no compilation).
+        type            atmBoundaryLayerInletK;
+        #include        "include/ABLConditions"
+        value           uniform 0.375;
+    }
+
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 0.375;
+        value           uniform 0.375;
+    }
+
+    top         { type slip; }
+
+    lowerWall   { type kqRWallFunction; value uniform 0.375; }
+    street1     { type kqRWallFunction; value uniform 0.375; }
+    street2     { type kqRWallFunction; value uniform 0.375; }
+    street3     { type kqRWallFunction; value uniform 0.375; }
+    buildings   { type kqRWallFunction; value uniform 0.375; }
+
+    frontAndBack { type empty; }
+}
+
+
+// ************************************************************************* //
