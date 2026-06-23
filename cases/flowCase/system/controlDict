@@ -28,9 +28,9 @@ deltaT          1;
 
 writeControl    timeStep;
 
-writeInterval   2000;
+writeInterval   500;    // intermediate snapshots every 500 iters; final at endTime
 
-purgeWrite      0;
+purgeWrite      3;      // keep only the last 3 time dirs + 0/ to save disk
 
 writeFormat     ascii;
 
@@ -46,6 +46,36 @@ runTimeModifiable yes;
 
 functions
 {
+    // Per-iteration residuals → postProcessing/residuals/
+    // Plot live with:  foamMonitor -l postProcessing/residuals/0/residuals.dat
+    residuals
+    {
+        type            residuals;
+        libs            ("libutilityFunctionObjects.so");
+        writeControl    timeStep;
+        writeInterval   1;
+        fields          (U p k omega);
+    }
+
+    // Detailed solver info (initial + final residual, iterations per field)
+    solverInfo
+    {
+        type            solverInfo;
+        libs            ("libutilityFunctionObjects.so");
+        writeControl    timeStep;
+        writeInterval   1;
+        fields          (U p k omega);
+    }
+
+    // Sanity check: velocity and pressure bounds each iteration
+    fieldMinMax
+    {
+        type            fieldMinMax;
+        libs            ("libfieldFunctionObjects.so");
+        writeControl    timeStep;
+        writeInterval   50;
+        fields          (U p);
+    }
 }
 
 // ************************************************************************* //
