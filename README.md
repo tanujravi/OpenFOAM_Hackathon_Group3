@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Guimarães Air-Quality / Mobility-Scenario CFD Workflow
 
 OpenFOAM workflow for the OFW21 hackathon: quantify how four sustainable-mobility
@@ -319,3 +320,6 @@ parallel on 96 ranks via SLURM.
 - Domain-influence comparison on the 25 km `city4CFD` domain.
 - Daily aggregation (mean + peak) across the 24 hourly states, per receptor.
 ```
+=======
+# OpenFOAM_Hackathon_Group3
+>>>>>>> origin/main
