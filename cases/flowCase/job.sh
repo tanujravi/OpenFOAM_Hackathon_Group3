@@ -17,6 +17,8 @@ eval "sed -i \"$sed_command\" system/decomposeParDict"
 
 decomposePar -force 
 
+srun potentialFoam -parallel > log.potentialFoam 2>&1
+
 srun simpleFoam -parallel > log.simpleFoam 2>&1
 
 echo "=== simpleFoam 128 cores DONE ==="

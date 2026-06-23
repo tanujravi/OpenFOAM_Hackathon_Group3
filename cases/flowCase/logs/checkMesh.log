@@ -1,0 +1,139 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2512                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : _87ed40d256-20251219 OPENFOAM=2512 version=v2512
+Arch   : "LSB;label=32;scalar=64"
+Exec   : /eb/x86_64/software/OpenFOAM/v2512-foss-2025a/OpenFOAM-v2512/platforms/linux64GccDPInt32Opt/bin/checkMesh -latestTime -parallel
+Date   : Jun 23 2026
+Time   : 16:13:15
+Host   : cnx044.deucalion.macc.fccn.pt
+PID    : 116002
+I/O    : uncollated
+Case   : /projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase
+nProcs : 96
+Hosts  :
+(
+    (cnx044.deucalion.macc.fccn.pt 96)
+)
+Pstream initialized with:
+    node communication : off [type=host] (96 ranks, 1 nodes)
+    topology controls  : none
+    consensus exchange : 0 (tuning: 0)
+    exchange algorithm : 0
+    commsType          : nonBlocking
+    polling iterations : 0
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+memory pool : not available
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 5, maxFileModificationPolls 20)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+--> FOAM Warning : 
+    From void* Foam::dlLibraryTable::openLibrary(const Foam::fileName&, bool)
+    in file db/dynamicLibrary/dlLibraryTable/dlLibraryTable.C at line 188
+    Could not load "libUseratmosphericModels.so"
+libUseratmosphericModels.so: cannot open shared object file: No such file or directory
+Create mesh for time = 2
+
+Check mesh...
+
+Time = 2
+
+Mesh stats 
+    points:           2575985
+    faces:            5945661
+    internal faces:   5054314
+    cells:            1714434
+    faces per cell:   6.4160971
+    boundary patches: 4 (7 38)
+    point zones:      1
+    face zones:       0
+    cell zones:       2
+
+Overall number of cells of each type:
+    hexahedra:     1366266
+    prisms:        33616
+    wedges:        0
+    pyramids:      0
+    tet wedges:    1426
+    tetrahedra:    9
+    polyhedra:     313117
+    Breakdown of polyhedra by number of faces:
+        faces   number of cells
+            4   23988
+            5   26353
+            6   37720
+            7   778
+            8   600
+            9   187637
+           10   132
+           11   130
+           12   23007
+           13   30
+           14   83
+           15   10934
+           16   7
+           17   30
+           18   1641
+           21   47
+
+Checking topology...
+    Boundary definition OK.
+    Cell to face addressing OK.
+    Point usage OK.
+    Upper triangular ordering OK.
+    Face vertices OK.
+    Number of regions: 1 (OK).
+
+Checking patch topology for multiply connected surfaces...
+                   Patch    Faces   Points  Surface topology
+             inletOutlet     6151     8090  ok (non-closed singly connected)
+                     top     2112     2479  ok (non-closed singly connected)
+               Buildings   152057   185673  multiply connected (shared edge)
+                 Terrain   570191   640295  ok (non-closed singly connected)
+                    ".*"   730511   788781  multiply connected (shared edge)
+
+Detected 7 bad edges (possibly relevant for finite-area)
+
+Checking faceZone topology for multiply connected surfaces...
+    No faceZones found.
+  <<Writing 14 conflicting points to set nonManifoldPoints
+
+Checking basic cellZone addressing...
+                CellZone        Cells       Points       VolumeBoundingBox
+                 square       690253      1085215 2.0613302e+10 (-1759.9988 -1760.0392 6.9650024) (1760.4274 1759.9758 1870)
+            innerCircle      1024181      1499310 2.8985312e+10 (-3000 -3000.0001 0.054477789) (3000 3000.024 1870)
+
+Checking basic pointZone addressing...
+               PointZone  PointsBoundingBox
+            frozenPoints       0(1e+150 1e+150 1e+150) (-1e+150 -1e+150 -1e+150)
+
+Checking geometry...
+    Overall domain bounding box (-3000 -3000.0001 0.054477789) (3000 3000.024 1870)
+    Mesh has 3 geometric (non-empty/wedge) directions (1 1 1)
+    Mesh has 3 solution (non-empty) directions (1 1 1)
+    Boundary openness (-9.4861267e-17 -1.5507295e-16 1.2542558e-16) OK.
+    Max cell openness = 3.9823206e-16 OK.
+    Max aspect ratio = 38.583802 OK.
+    Minimum face area = 0.00083260646. Maximum face area = 42386.572.  Face area magnitudes OK.
+    Min volume = 0.0092436115. Max volume = 4691724.3.  Total volume = 4.9598613e+10.  Cell volumes OK.
+    Mesh non-orthogonality Max: 71.908119 average: 14.415749
+   *Number of severely non-orthogonal (> 70 degrees) faces: 68.
+    Non-orthogonality check OK.
+  <<Writing 68 non-orthogonal faces to set nonOrthoFaces
+    Face pyramids OK.
+ ***Max skewness = 4.999113, 79 highly skew faces detected which may impair the quality of the results
+  <<Writing 79 skew faces to set skewFaces
+    Coupled point location match (average 0) OK.
+
+Failed 1 mesh checks.
+
+End
+
+Finalising parallel run

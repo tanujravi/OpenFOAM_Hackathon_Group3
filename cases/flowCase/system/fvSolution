@@ -56,9 +56,11 @@ solvers
         $p;
     }
 }
+potentialFlow { nNonOrthogonalCorrectors 10; PhiRefCell 0; PhiRefValue 0; }
 
 SIMPLE
 {
+    consistent               no;
     residualControl
     {
         p               1e-6;

@@ -1,0 +1,143 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2512                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : _87ed40d256-20251219 OPENFOAM=2512 version=v2512
+Arch   : "LSB;label=32;scalar=64"
+Exec   : surfaceFeatureExtract
+Date   : Jun 23 2026
+Time   : 16:04:48
+Host   : cnx044.deucalion.macc.fccn.pt
+PID    : 3343465
+I/O    : uncollated
+Case   : /projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+memory pool : not available
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 5, maxFileModificationPolls 20)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+--> FOAM Warning : 
+    From void* Foam::dlLibraryTable::openLibrary(const Foam::fileName&, bool)
+    in file db/dynamicLibrary/dlLibraryTable/dlLibraryTable.C at line 188
+    Could not load "libUseratmosphericModels.so"
+libUseratmosphericModels.so: cannot open shared object file: No such file or directory
+
+Note: Feature line extraction only valid on closed manifold surfaces
+
+Reading surfaceFeatureExtractDict
+
+Surfaces     : Mesh_Buildings.obj
+Output       : Mesh_Buildings
+Load options : offset
+Write options: writeObj=yes writeVTK=off
+
+Statistics:
+Triangles    : 696992 in 1 region(s)
+Vertices     : 336121
+Bounding Box : (-1522.8335 -1243.8476 14.949093) (1658.8862 1091.1687 176.13273)
+
+Constructing feature set from included angle 120
+Selecting edges based purely on geometric tests: no
+
+Initial Feature set:
+    points : 67865
+    edges  : 286329
+    of which
+        region edges   : 19780
+        external edges : 246391
+        internal edges : 20158
+
+Final Feature set:
+    points : 243099
+    of which
+        convex             : 44985
+        concave            : 330
+        mixed              : 22550
+        non-feature        : 175234
+    edges  : 286329
+    of which
+        external edges     : 246391
+        internal edges     : 20158
+        flat edges         : 0
+        open edges         : 28
+        multiply connected : 19752
+
+Writing extendedFeatureEdgeMesh to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings.extendedFeatureEdgeMesh"
+
+Writing extendedEdgeMesh components to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings"
+Writing 44985 convex feature points to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings_convexFeaturePts.obj"
+Writing 330 concave feature points to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings_concaveFeaturePts.obj"
+Writing 22550 mixed feature points to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings_mixedFeaturePts.obj"
+Writing 22550 mixed feature point structure to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings_mixedFeaturePtsStructure.obj"
+Writing 246391 external edges to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings_externalEdges.obj"
+Writing 20158 internal edges to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings_internalEdges.obj"
+Writing 0 flat edges to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings_flatEdges.obj"
+Writing 28 open edges to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings_openEdges.obj"
+Writing 19752 multiple edges to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings_multipleEdges.obj"
+Writing 19780 region edges to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings_regionEdges.obj"
+Writing 286329 edge directions to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Buildings_edgeDirections.obj"
+
+Writing featureEdgeMesh to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/triSurface/Mesh_Buildings.eMesh"
+Surfaces     : Mesh_Terrain.obj
+Output       : Mesh_Terrain
+Load options : offset
+Write options: writeObj=yes writeVTK=off
+
+Statistics:
+Triangles    : 477445 in 1 region(s)
+Vertices     : 238983
+Bounding Box : (-3150 -3150 0) (3150 3150 469.87989)
+
+Constructing feature set from included angle 120
+Selecting edges based purely on geometric tests: no
+
+Initial Feature set:
+    points : 135
+    edges  : 1423
+    of which
+        region edges   : 827
+        external edges : 306
+        internal edges : 290
+
+Final Feature set:
+    points : 1395
+    of which
+        convex             : 0
+        concave            : 1
+        mixed              : 134
+        non-feature        : 1260
+    edges  : 1423
+    of which
+        external edges     : 306
+        internal edges     : 290
+        flat edges         : 0
+        open edges         : 827
+        multiply connected : 0
+
+Writing extendedFeatureEdgeMesh to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain.extendedFeatureEdgeMesh"
+
+Writing extendedEdgeMesh components to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain"
+Writing 0 convex feature points to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain_convexFeaturePts.obj"
+Writing 1 concave feature points to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain_concaveFeaturePts.obj"
+Writing 134 mixed feature points to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain_mixedFeaturePts.obj"
+Writing 134 mixed feature point structure to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain_mixedFeaturePtsStructure.obj"
+Writing 306 external edges to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain_externalEdges.obj"
+Writing 290 internal edges to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain_internalEdges.obj"
+Writing 0 flat edges to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain_flatEdges.obj"
+Writing 827 open edges to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain_openEdges.obj"
+Writing 0 multiple edges to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain_multipleEdges.obj"
+Writing 827 region edges to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain_regionEdges.obj"
+Writing 1423 edge directions to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/extendedFeatureEdgeMesh/Mesh_Terrain_edgeDirections.obj"
+
+Writing featureEdgeMesh to "/projects/F202500001HPCVLABEPICURE/ofoam.019/guimaraes/cases/flowCase/constant/triSurface/Mesh_Terrain.eMesh"
+ExecutionTime = 7.76 s  ClockTime = 8 s
+
+End
+
