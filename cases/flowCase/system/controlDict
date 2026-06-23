@@ -1,4 +1,19 @@
-FoamFile { version 2.0; format ascii; class dictionary; object controlDict; }
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | Guimaraes small domain -- RECENTRED frame
+     \\/     M anipulation  | (adapted from the source-city template)
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 // atmospheric BCs (atmBoundaryLayerInlet*, atm*WallFunction, freestreamPressure)
 // live in the ESI atmosphericModels library:
@@ -19,4 +34,9 @@ writeCompression off;
 timeFormat      general;
 timePrecision   6;
 runTimeModifiable true;
+
+functions
+{
+    #include "FOwallClockTimeStatistics"
+}
 // ************************************************************************* //

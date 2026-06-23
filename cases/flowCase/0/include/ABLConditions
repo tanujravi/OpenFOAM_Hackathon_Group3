@@ -1,7 +1,7 @@
 /*--- ABL inflow parameters (neutral, Richards & Hoxey / Hargreaves-Wright) ---*/
-Uref                 2.415358;     // reference wind speed [m/s]   <-- HOURLY (set_wind)
+Uref                 2.275445;     // reference wind speed [m/s]   <-- HOURLY (set_wind)
 Zref                 10.0;      // reference height [m]
-angle                -36.0373;    // wind dir, deg: flowDir=(cos,sin)  <-- HOURLY (set_wind)
+angle                -37.4505;    // wind dir, deg: flowDir=(cos,sin)  <-- HOURLY (set_wind)
 zDir                 (0 0 1);   // vertical
 z0                   uniform 0.25;   // terrain aerodynamic roughness [m]
 d                    uniform 0.0;    // displacement height
