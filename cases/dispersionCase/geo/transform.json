@@ -1,0 +1,29 @@
+{
+  "description": "Pure translation; recentred frame for the small (6.3km) Guimaraes domain.",
+  "origin_utm": {
+    "X0": -13152.616681,
+    "Y0": 197434.737589,
+    "Z0": 142.676136
+  },
+  "offset_applied": {
+    "dx": 13152.616681,
+    "dy": -197434.737589,
+    "dz": -142.676136
+  },
+  "to_recentred": "X' = X + dx ; Y' = Y + dy ; Z' = Z + dz",
+  "to_utm_inverse": "X = X' - dx ; Y = Y' - dy ; Z = Z' - dz",
+  "applied_to": [
+    "Mesh_Terrain",
+    "Mesh_Buildings_0..5 (merged)",
+    "ROI",
+    "snapped_road_segments"
+  ],
+  "excluded": [
+    "Mesh_Buildings_6 (far-field)",
+    "canopy/merged.obj (porous, deferred)"
+  ],
+  "invariant": [
+    "wind u,v vectors",
+    "emission factors"
+  ]
+}

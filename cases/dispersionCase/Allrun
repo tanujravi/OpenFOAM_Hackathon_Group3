@@ -1,0 +1,44 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # run from this directory
+. "${WM_PROJECT_DIR:?}/bin/tools/RunFunctions"      # RunFunctions
+
+# Single-hour dispersion test on the FROZEN wind field from the flow precursor.
+flowCase="../initialCase"
+
+# 1. mesh from the converged flow case
+[ -d "$flowCase/constant/polyMesh" ] || {
+    echo "ERROR: $flowCase has no mesh - run the meshing + simpleFoam first." 1>&2
+    exit 1
+}
+rm -rf constant/polyMesh
+cp -r "$flowCase/constant/polyMesh" constant/
+
+# 2. frozen flow fields (latest converged time) into 0/
+latest=$(foamListTimes -case "$flowCase" -latestTime)
+[ -n "$latest" ] || { echo "ERROR: no time dirs in $flowCase (run simpleFoam first)." 1>&2; exit 1; }
+echo "Copying frozen fields from $flowCase/$latest"
+cp "$flowCase/$latest/U"   0/U          # frozen velocity
+cp "$flowCase/$latest/phi" 0/phi        # conservative flux (used as-is)
+[ -f "$flowCase/$latest/nut" ] && cp "$flowCase/$latest/nut" 0/nut   # optional
+
+# 3. carve the road 'streets' source patch(es) out of the Terrain ground.
+#    (post-mesh; needs the polyMesh above). Writes system/createPatchDict, then:
+SCENARIO=${SCENARIO:-reference}      # reference | S1 | S2 | S3
+POLLUTANT=${POLLUTANT:-NOx}          # CO | NOx
+HOUR=${HOUR:-0}                      # 0..23  (07:00->07:00 bins)
+HALFWIDTH=${HALFWIDTH:-6.0}          # m, ground-face proximity to a road
+python3 ../tools/make_street_patches.py --case . \
+        --roads geo/snapped_road_segments_recentred.csv --half-width "$HALFWIDTH"
+runApplication createPatch -overwrite
+
+# 4. inject per-segment emission as a NON-UNIFORM fixedGradient on 'streets'.
+#    unit-scale is a placeholder until the CSV emission-rate units are confirmed,
+#    so this is a RELATIVE run (scenario ratios exact; magnitude nominal).
+python3 ../tools/set_emissions.py --case . --pollutant "$POLLUTANT" \
+        --hour "$HOUR" --scenario "$SCENARIO" --DT 1.0 --unit-scale 1.0
+
+# 5. solve
+runApplication scalarTransportFoam
+
+touch dispersion.foam
+#------------------------------------------------------------------------------

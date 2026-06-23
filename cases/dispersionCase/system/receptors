@@ -1,0 +1,25 @@
+// Receptor air-quality sampling: area-averaged concentration T on each of the
+// four ROI surfaces (kg/m^3; x1e9 -> ug/m^3). Included by controlDict functions{}.
+// Runs during scalarTransportFoam; writes postProcessing/<receptorN>/<t>/surfaceFieldValue.dat
+_receptorTemplate
+{
+    type            surfaceFieldValue;
+    libs            (fieldFunctionObjects sampling);
+    fields          (T);
+    operation       areaAverage;
+    regionType      sampledSurface;
+    surfaceFormat   none;
+    writeFields     false;
+    writeControl    timeStep;
+    writeInterval   100;
+    log             true;
+}
+
+receptor1 { $_receptorTemplate name receptor1;
+    sampledSurfaceDict { type sampledTriSurfaceMesh; surface receptor1.obj; source cells; interpolate true; } }
+receptor2 { $_receptorTemplate name receptor2;
+    sampledSurfaceDict { type sampledTriSurfaceMesh; surface receptor2.obj; source cells; interpolate true; } }
+receptor3 { $_receptorTemplate name receptor3;
+    sampledSurfaceDict { type sampledTriSurfaceMesh; surface receptor3.obj; source cells; interpolate true; } }
+receptor4 { $_receptorTemplate name receptor4;
+    sampledSurfaceDict { type sampledTriSurfaceMesh; surface receptor4.obj; source cells; interpolate true; } }

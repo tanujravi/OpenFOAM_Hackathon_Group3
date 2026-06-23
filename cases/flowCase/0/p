@@ -1,0 +1,38 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2512                                 |
+|   \\  /    A nd           | Guimaraes small domain -- RECENTRED frame       |
+|    \\/     M anipulation  | simpleFoam wind precursor                       |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -2 0 0 0 0];   // kinematic pressure (p/rho)
+
+internalField   uniform 0;
+
+boundaryField
+{
+    // Matches U's freestreamVelocity: 'freestream' is zeroGradient on inflow,
+    // fixedValue (=freestreamValue) on outflow; anchors the pressure level.
+    inletOutlet
+    {
+        type            freestream;
+        freestreamValue uniform 0;
+    }
+
+    top         { type symmetry; }
+
+    Terrain     { type zeroGradient; }
+    Buildings   { type zeroGradient; }
+}
+
+
+// ************************************************************************* //

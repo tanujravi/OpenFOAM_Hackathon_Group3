@@ -1,0 +1,33 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | Guimaraes small domain -- RECENTRED frame
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      surfaceFeatureExtractDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// Only the two surfaces meshed as walls. Water (none provided) and Vegetation
+// (porous, handled later) intentionally omitted.
+
+Mesh_Buildings.obj
+{
+    extractionMethod    extractFromSurface;
+    extractFromSurfaceCoeffs { includedAngle 120; }
+    writeObj            yes;
+}
+
+Mesh_Terrain.obj
+{
+    extractionMethod    extractFromSurface;
+    extractFromSurfaceCoeffs { includedAngle 120; }
+    writeObj            yes;
+}
+
+// ************************************************************************* //

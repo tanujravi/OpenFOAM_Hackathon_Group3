@@ -1,0 +1,78 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  10
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      surfaceFeatureExtractDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+Mesh_Buildings.obj
+{
+    extractionMethod extractFromSurface;
+
+    extractFromSurfaceCoeffs
+    {
+        includedAngle 120;
+    }
+
+    writeObj yes;
+}
+
+Mesh_Terrain.obj
+{
+    extractionMethod extractFromSurface;
+
+    extractFromSurfaceCoeffs
+    {
+        includedAngle 120;
+    }
+
+    writeObj yes;
+}
+
+Mesh_Water.obj
+{
+    extractionMethod extractFromSurface;
+
+    extractFromSurfaceCoeffs
+    {
+        includedAngle 120;
+    }
+
+    writeObj yes;
+}
+
+Mesh_Vegetation.obj
+{
+    extractionMethod extractFromSurface;
+
+    extractFromSurfaceCoeffs
+    {
+        includedAngle 120;
+    }
+
+    writeObj yes;
+}
+
+/*
+Mesh_Ocean.obj
+{
+    extractionMethod extractFromSurface;
+
+    extractFromSurfaceCoeffs
+    {
+        includedAngle 120;
+    }
+
+    writeObj yes;
+}
+*/
+// ************************************************************************* //
