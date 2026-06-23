@@ -49,7 +49,7 @@ if [ $snapPar ]; then
 	# Generate the snappyHexMesh
 	echo "To follow the progress for snappyHexMesh, read logs/snappyHex.log....."
 	#snappyHexMesh -overwrite > logs/snappyHex.log
-	mpirun -np $nprocs snappyHexMesh -parallel > logs/snappyHex.log 2>&1
+	srun snappyHexMesh -parallel > logs/snappyHex.log 2>&1
 	echo "Done with snappyHexMesh......"
 	# Reconstruct the mesh
 	echo "Reconstructing the mesh......"
@@ -58,7 +58,7 @@ if [ $snapPar ]; then
 	rsync -r 1 2 savedMesh/
 	# Run check mesh for sanity
 	echo "Running checkmesh utility......."
-	mpirun -np $nprocs checkMesh -latestTime -parallel > logs/checkMesh.log 2>&1
+	srun checkMesh -latestTime -parallel > logs/checkMesh.log 2>&1
 else
 	echo "Snappy Hex Mesh runs in serial......"
 	# Generate the snappyHexMesh

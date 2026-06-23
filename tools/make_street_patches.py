@@ -172,14 +172,54 @@ def carve(case, roads_csv, terrain_patch, half_width, set_name, patch_name):
     start, nf = bnd[terrain_patch]
     segs = read_roads(roads_csv)
 
-    chosen = []      # (global_face_label, segment_id, area)
-    for k in range(nf):
-        gf = start + k
+    # ---- vectorised face -> nearest road segment (numpy) ----------------------
+    import numpy as np
+    P = np.asarray(pts, dtype=float)
+    terr = faces[start:start + nf]
+    counts = np.fromiter((len(f) for f in terr), dtype=np.int64, count=nf)
+    flat = np.fromiter((i for f in terr for i in f), dtype=np.int64)
+    fid = np.repeat(np.arange(nf, dtype=np.int64), counts)
+    csum = np.zeros((nf, 2))
+    np.add.at(csum, fid, P[flat, :2])         # sum vertex (x,y) per face
+    cen = csum / counts[:, None]              # terrain face centroids (x,y)
+
+    # prefilter: only faces near the road-network bbox can ever be within half_width
+    allp = np.array([q for s in segs for q in s], dtype=float)
+    lo = allp.min(0) - (half_width + 1.0)
+    hi = allp.max(0) + (half_width + 1.0)
+    cand = np.where((cen[:, 0] >= lo[0]) & (cen[:, 0] <= hi[0]) &
+                    (cen[:, 1] >= lo[1]) & (cen[:, 1] <= hi[1]))[0]
+    cxx = cen[cand, 0]; cyy = cen[cand, 1]
+
+    best = np.full(cand.shape, np.inf)        # running min distance^2
+    bseg = np.full(cand.shape, -1, dtype=np.int64)
+    nseg = len(segs)
+    print("carve: %d candidate faces (of %d Terrain) vs %d road segments"
+          % (len(cand), nf, nseg), flush=True)
+    for si, s in enumerate(segs):             # loop pieces (~3k), vectorise over faces
+        if si % 10 == 0 or si == nseg - 1:
+            print("  segment %d/%d  (%5.1f%%)" % (si + 1, nseg, 100.0 * (si + 1) / nseg),
+                  flush=True)
+        a = np.asarray(s, dtype=float)
+        for j in range(len(s) - 1):
+            ax, ay = a[j]; bx, by = a[j + 1]
+            dx = bx - ax; dy = by - ay; l2 = dx * dx + dy * dy
+            if l2 == 0.0:
+                d2 = (cxx - ax) ** 2 + (cyy - ay) ** 2
+            else:
+                t = ((cxx - ax) * dx + (cyy - ay) * dy) / l2
+                np.clip(t, 0.0, 1.0, out=t)
+                d2 = (cxx - (ax + t * dx)) ** 2 + (cyy - (ay + t * dy)) ** 2
+            upd = d2 < best
+            best[upd] = d2[upd]; bseg[upd] = si
+    sel = np.where(best <= half_width * half_width)[0]
+    seg_by_local = dict(zip(cand[sel].tolist(), bseg[sel].tolist()))
+
+    chosen = []      # (global_face_label, segment_id, area), ascending face label
+    for li in np.sort(cand[sel]).tolist():
+        gf = start + li
         verts = [pts[i] for i in faces[gf]]
-        cx, cy, _ = face_centre(verts)
-        seg, dist = nearest_segment(cx, cy, segs)
-        if dist <= half_width:
-            chosen.append((gf, seg, poly_area_3d(verts)))
+        chosen.append((gf, seg_by_local[li], poly_area_3d(verts)))
 
     write_faceset(os.path.join(pm, "sets", set_name), set_name, [c[0] for c in chosen])
     with open(os.path.join(case, "system", "createPatchDict"), "w") as f:

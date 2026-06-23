@@ -1,0 +1,24 @@
+/*--------------------------------*- C++ -*--------------------------------*\
+  ALT inlet: split inlet/outlet. inlet = fixed hourly wind; outlet = pressure-out.
+\*-------------------------------------------------------------------------*/
+FoamFile { version 2.0; format ascii; class volVectorField; object U; }
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+dimensions      [0 1 -1 0 0 0 0];
+internalField   uniform (1.953141 -1.420984 0);
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform (1.953141 -1.420984 0);   // HOURLY WIND (u v 0)
+    }
+    outlet
+    {
+        type            pressureInletOutletVelocity;
+        value           uniform (0 0 0);
+    }
+    top         { type symmetry; }
+    Terrain     { type noSlip; }
+    Buildings   { type noSlip; }
+}
+// ************************************************************************* //

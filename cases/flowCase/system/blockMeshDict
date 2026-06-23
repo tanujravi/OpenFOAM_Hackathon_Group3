@@ -1,0 +1,355 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     |                                                 |
+|   \\  /    A nd           | Copyright (C) 2016 Ehsan Madadi-Kandjani        |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+/*
+GUIMARAES small domain -- RECENTRED frame (see geo/transform.json).
+Pure translation of the provided OBJs: origin at terrain bbox centre,
+lowest terrain shifted to Z=0.
+
+Working on geo/Mesh_Terrain.obj
+Bounding Box Minimum: [-3150.0 -3150.0    0.0]
+Bounding Box Maximum: [ 3150.0  3150.0  469.9]
+Working on geo/Mesh_Buildings.obj   (buildings 0-5 merged; far-field _6 excluded)
+Bounding Box Minimum: [-1522.8 -1243.8   14.9]
+Bounding Box Maximum: [ 1658.9  1091.2  176.1]
+
+NOTE vs the source city:
+ - Terrain here has REAL relief (0..470 m); the source terrain was ~flat (~17 m).
+   So the domain is sized to the terrain footprint, NOT to building height H.
+ - Lateral radius is terrain-limited (terrain half-width 3150 m) -> r = 3000 m,
+   set explicitly (the source 15*H+2*s COST732 rule would overrun the terrain).
+ - Background block bottom sits BELOW the lowest terrain; snappyHexMesh carves the
+   real terrain surface, so the block's flat bottom patch is renamed 'bottom'
+   (it ends up underground / removed) to avoid clashing with snappy's 'Terrain'.
+*/
+
+// General macros to create cylinder mesh
+
+// pi defined inline (4*atan2(1,1)); cos/sin/atan2 are core Perl, so NO
+// Math::Trig module is required (fixes the cluster "Can't locate Math/Trig.pm").
+
+
+
+
+
+
+
+
+
+
+// Characteristic vertical scale: max terrain relief (NOT building height here)
+
+
+// Center point in X cylinder (recentred frame -> origin)
+
+// Center point in Y cylinder
+
+// Domain floor: 10 m BELOW lowest terrain (terrain min = 0) so snappy can carve
+
+
+// Inner (fine) square half-side -- covers the ROI (~ +/-1600 m)
+
+// Inner square side curvature
+ //todo: try to parameterise
+
+// Number of cells at inner square
+			// background; snappy refines near surfaces
+// Number of cells between inner square and circle
+
+// Number of cells in the cylinder height
+			// floor -> mid
+			// mid -> top
+
+// Define stretching
+
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// Lateral radius is TERRAIN-LIMITED (terrain half-width = 3150 m), set directly.
+// The source COST732 rule 15*H+2*s would overrun the provided terrain footprint.
+
+// Cylinder radius
+
+
+// Second part of cells in inner/outer circle
+
+
+
+// Domain height above the floor: ~4x relief -> top ~1870 m, clears terrain (470)
+// plus a deep ABL. (Source used 6*H on a near-flat terrain.)
+
+// Base z
+
+// Mid z
+
+// Outlet z
+
+
+
+
+
+// 45 degree points angle
+
+
+
+
+
+// Half of 45 degree points angle
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Inner square x and y position
+// x
+
+
+
+
+// y
+
+
+
+
+
+// Circle x and y positions
+// x
+
+
+
+
+// y
+
+
+
+
+
+// Inner square x and y position middle curvatures
+// x
+
+
+
+
+// y
+
+
+
+
+
+// Circle x and y positions middle curvatures
+// x
+
+
+
+
+// y
+
+
+
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+vertices
+(
+    (1600 -1600 -10) // Vertex s0b = 0   //0
+    (-1600 -1600 -10) // Vertex s1b = 1   //1
+    (-1600 1600 -10) // Vertex s2b = 2   //2
+    (1600 1600 -10) // Vertex s3b = 3   //3
+    
+    (2121.32034355964 -2121.32034355964 -10) // Vertex r0b = 4   //4
+    (-2121.32034355964 -2121.32034355964 -10) // Vertex r1b = 5   //5
+    (-2121.32034355964 2121.32034355964 -10) // Vertex r2b = 6   //6
+    (2121.32034355964 2121.32034355964 -10) // Vertex r3b = 7   //7
+
+    (1600 -1600 930) // Vertex s0m = 8   //8
+    (-1600 -1600 930) // Vertex s1m = 9   //9
+    (-1600 1600 930) // Vertex s2m = 10   //10
+    (1600 1600 930) // Vertex s3m = 11   //11
+    
+    (2121.32034355964 -2121.32034355964 930) // Vertex r0m = 12   //12
+    (-2121.32034355964 -2121.32034355964 930) // Vertex r1m = 13   //13
+    (-2121.32034355964 2121.32034355964 930) // Vertex r2m = 14   //14
+    (2121.32034355964 2121.32034355964 930) // Vertex r3m = 15   //15
+    
+    (1600 -1600 1870) // Vertex s0t = 16   //16
+    (-1600 -1600 1870) // Vertex s1t = 17   //17
+    (-1600 1600 1870) // Vertex s2t = 18   //18
+    (1600 1600 1870) // Vertex s3t = 19   //19
+    
+    (2121.32034355964 -2121.32034355964 1870) // Vertex r0t = 20   //20
+    (-2121.32034355964 -2121.32034355964 1870) // Vertex r1t = 21   //21
+    (-2121.32034355964 2121.32034355964 1870) // Vertex r2t = 22   //22
+    (2121.32034355964 2121.32034355964 1870) // Vertex r3t = 23   //23
+);
+
+blocks
+(
+    //block0
+    hex (1 0 3 2 9 8 11 10)
+    square
+    (24 24 6)
+    simpleGrading (1 1 1)
+    
+    //block1
+    hex (0 4 7 3 8 12 15 11)
+    innerCircle
+    (16 24 6)
+    simpleGrading (2 1 1)
+    
+    //block2
+    hex (3 7 6 2 11 15 14 10)
+    innerCircle
+    (16 24 6)
+    simpleGrading (2 1 1)
+    
+    //block3
+    hex (2 6 5 1 10 14 13 9)
+    innerCircle
+    (16 24 6)
+    simpleGrading (2 1 1)
+    
+    //block4
+    hex (1 5 4 0 9 13 12 8)
+    innerCircle
+    (16 24 6)
+    simpleGrading (2 1 1)
+
+    //block01
+    hex (9 8 11 10 17 16 19 18)
+    square
+    (24 24 6)
+    simpleGrading (1 1 2)
+    
+    //block11
+    hex (8 12 15 11 16 20 23 19)
+    innerCircle
+    (16 24 6)
+    simpleGrading (2 1 2)
+    
+    //block21
+    hex (11 15 14 10 19 23 22 18)
+    innerCircle
+    (16 24 6)
+    simpleGrading (2 1 2)
+    
+    //block31
+    hex (10 14 13 9 18 22 21 17)
+    innerCircle
+    (16 24 6)
+    simpleGrading (2 1 2)
+    
+    //block41
+    hex (9 13 12 8 17 21 20 16)
+    innerCircle
+    (16 24 6)
+    simpleGrading (2 1 2)
+);
+
+edges
+(
+    //Circle edges
+    arc 7 4 (3000 0 -10)
+    arc 4 5 (1.83697019872103e-13 -3000 -10)
+    arc 5 6 (-3000 3.67394039744205e-13 -10)
+    arc 6 7 (1.83697019872103e-13 3000 -10)
+    
+    arc 15 12 (3000 0 930)
+    arc 12 13 (1.83697019872103e-13 -3000 930)
+    arc 13 14 (-3000 3.67394039744205e-13 930)
+    arc 14 15 (1.83697019872103e-13 3000 930)
+
+    arc 23 20 (3000 0 1870)
+    arc 20 21 (1.83697019872103e-13 -3000 1870)
+    arc 21 22 (-3000 3.67394039744205e-13 1870)
+    arc 22 23 (1.83697019872103e-13 3000 1870)
+    
+    arc 3 0 (1760 0 -10)
+    arc 0 1 (0 -1760 -10)
+    arc 1 2 (-1760 0 -10)
+    arc 2 3 (0 1760 -10)
+
+    arc 11 8 (1760 0 930)
+    arc 8 9 (0 -1760 930)
+    arc 9 10 (-1760 0 930)
+    arc 10 11 (0 1760 930)
+    
+    arc 19 16 (1760 0 1870)
+    arc 16 17 (0 -1760 1870)
+    arc 17 18 (-1760 0 1870)
+    arc 18 19 (0 1760 1870)
+);
+
+patches
+(
+    patch inletOutlet
+    (
+        (4 7 12 15)
+        (5 4 13 12)
+        (6 5 14 13)
+        (7 6 15 14)
+        (12 15 23 20)
+        (13 12 20 21)
+        (14 13 21 22)
+        (15 14 22 23)
+    )
+    
+    // Flat block floor BELOW the real terrain; snappy snaps the actual ground as
+    // patch 'Terrain', so this is named 'bottom' (mostly carved away) to avoid a clash.
+    wall bottom
+    (
+        (3 0 1 2)
+        (3 7 4 0)
+        (2 6 7 3)
+        (1 5 6 2)
+        (0 4 5 1)
+    )
+    
+    symmetry top
+    (
+        (19 18 17 16)
+        (19 16 20 23)
+        (18 19 23 22)
+        (17 18 22 21)
+        (16 17 21 20)
+    )
+);
+
+mergePatchPairs
+(
+);

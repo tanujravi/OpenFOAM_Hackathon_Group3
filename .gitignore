@@ -17,9 +17,6 @@ processor*/
 postProcessing/
 *.foam
 *.OpenFOAM
-log.*
-logs/
-*.log
 dynamicCode/
 
 # ---- mesh & snappy intermediates (rebuild with runallgeo.sh) --------------

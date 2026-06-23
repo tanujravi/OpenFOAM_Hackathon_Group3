@@ -1,0 +1,40 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  6
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+
+/*-------------------- INPUT PARAMETERS FOR ABL INFLOW---------------------------------*/
+Uref                 5.0;		// Reference bulk velocity in m/s
+Zref                 10.0;		// Reference height for Uref in m
+angle		     40;			// Angle of attack in degrees w.r.t North
+zDir                 (0 0 1);		// Specify the coordinate corresponding to vertical
+// Roughness parameters
+z0                   uniform 0.25;	// Hydraulic roughness for terrain
+d		     uniform 0.0;	// Velocity displacement height
+z0forest             uniform 0.8;       // Forest hydraulic roughness (Updated Davenport roughness guide, intermediate roughness)
+z0vegetation         uniform 0.03;      // Vegetation hydraulic roughness in m
+z0water              uniform 0.0002;    // Water hydraulic roughness in m
+// Some fixed parameters
+z0_		     0.25;		// This needs to be the same as z0 defined in the roughness parameters
+kappa                0.41;		// von Karman constant
+Cmu                  0.09;		// k-epsilon turbulence closure constant
+E                    9.8;		// Experimental constant
+pressure             0;			// Reference pressure (typically 0 is a good option)
+/*----------------------------------------------------------------------------------*/
+/*				BELOW SOME CALCULATIONS				    */
+/*			Do not intervene if unsure what is happening		    */
+/*----------------------------------------------------------------------------------*/
+angleRad             #calc "degToRad($angle)";
+comp1                #calc "cos($angleRad)";
+comp2                #calc "sin($angleRad)";
+flowDir              ($comp1 $comp2 0);
+uStar                #calc "( $Uref * $kappa ) / log(( $Zref + $z0_ )/ $z0_ )";
+kInlet               #calc "( $uStar * $uStar ) / sqrt( $Cmu )";
+epsilonInlet         #calc "pow($uStar,3) / ( $kappa * ( $Zref + $z0_ ))";
+comp1byUref	     #calc "$Uref*$comp1";
+comp2byUref	     #calc "$Uref*$comp2";
+Uvector              ($comp1byUref $comp2byUref 0);
+// ************************************************************************* //

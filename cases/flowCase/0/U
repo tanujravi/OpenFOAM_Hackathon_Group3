@@ -1,53 +1,18 @@
-/*--------------------------------*- C++ -*----------------------------------*\
-| =========                 |                                                 |
-| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  v2512                                 |
-|   \\  /    A nd           | Guimaraes small domain -- RECENTRED frame       |
-|    \\/     M anipulation  | simpleFoam wind precursor                       |
-\*---------------------------------------------------------------------------*/
-FoamFile
-{
-    version     2.0;
-    format      ascii;
-    class       volVectorField;
-    object      U;
-}
+FoamFile { version 2.0; format ascii; class volVectorField; object U; }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
+#include "include/ABLConditions"
 dimensions      [0 1 -1 0 0 0 0];
-
-// Spatially-uniform horizontal wind (the provided reference wind is a single
-// (u,v) per hour). Set per hour by the orchestration (see marker below).
-internalField   uniform (1.953141 -1.420984 0);
-
+internalField   uniform $Uvector;
 boundaryField
 {
-    // Single all-round cylindrical boundary. The hourly wind arrives from a
-    // DIFFERENT direction each hour, so this patch must accept inflow AND outflow
-    // on any face. freestreamVelocity = fixedValue (=freestreamValue) on faces
-    // where flow enters, zeroGradient where it leaves -- chosen per face from the
-    // flux. One fixed mesh then handles every hourly wind direction, no remeshing.
     inletOutlet
     {
-        type            freestreamVelocity;
-        freestreamValue uniform (1.953141 -1.420984 0);   // HOURLY WIND (u v 0) <-- set per hour
+        type            atmBoundaryLayerInletVelocity;
+        #include         "include/ABLConditions"
+        z0               $z0;
+        value            uniform $Uvector;
     }
-
-    top
-    {
-        type            symmetry;            // blockMesh 'symmetry top'
-    }
-
-    Terrain
-    {
-        type            noSlip;
-    }
-
-    Buildings
-    {
-        type            noSlip;
-    }
+    top                  { type symmetry; }
+    "(Buildings|Terrain)" { type noSlip; }
 }
-
-
 // ************************************************************************* //

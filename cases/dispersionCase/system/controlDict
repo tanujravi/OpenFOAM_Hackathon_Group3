@@ -3,6 +3,10 @@
 \*---------------------------------------------------------------------------*/
 FoamFile { version 2.0; format ascii; class dictionary; object controlDict; }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// The frozen nut copied from the flow case carries atmNutkWallFunction on
+// Terrain, so the atmospheric BC library must be loaded to read the fields.
+libs            (atmosphericModels);
+
 application     scalarTransportFoam;
 
 startFrom       startTime;

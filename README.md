@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Guimarães Air-Quality / Mobility-Scenario CFD Workflow
 
 OpenFOAM workflow for the OFW21 hackathon: quantify how four sustainable-mobility
@@ -30,8 +29,8 @@ patch creation, the emission mapping, receptor sampling, and the orchestration.
         └─────────────────┬───────────────────┘
                           │  constant/polyMesh
         ┌─────────────────┴───────────────────┐
-        │  STAGE 1  WIND  (initialCase)        │  simpleFoam, k-ω SST, steady RANS
-        │  per-hour (u,v) freestream inlet     │  → frozen U, phi, nut
+        │  STAGE 1  WIND  (cases/flowCase)     │  simpleFoam, k-ε ABL, steady RANS
+        │  per-hour ABL inlet (Uref,angle)     │  → frozen U, phi, nut
         └─────────────────┬───────────────────┘
                           │  frozen flow fields
         ┌─────────────────┴───────────────────┐
@@ -132,33 +131,49 @@ Terrain at refinement level 4, buildings at 5 (cell-count balance). Canopy and
 
 ---
 
-## 5. Stage 1 — Wind precursor (`initialCase`, `simpleFoam`)
+## 5. Stage 1 — Wind precursor (`cases/flowCase`, `simpleFoam`)
 
-Steady RANS (`simpleFoam`, k-ω SST) produces the hourly wind field that the
-dispersion stage advects on.
+Steady RANS (`simpleFoam`, **k-ε** with neutral-ABL coefficients, Hargreaves &
+Wright) produces the hourly wind field that the dispersion stage advects on.
 
 
 **Ricardo Andrade Note:** We should check if this velocity boundary condition makes sense in this case.
 
-**All-round freestream inlet (varying wind direction).** The domain boundary is a
-single cylindrical `inletOutlet` patch, and the reference wind blows from a
-different direction each hour. So instead of a fixed inlet face we use the
-**freestream** family, which decides inflow vs. outflow per face from the flux:
+**Atmospheric boundary-layer inlet (the `round`-template approach).** The domain
+boundary is a single cylindrical `inletOutlet` patch and the hourly wind arrives from
+a different direction each hour, so we use OpenFOAM's flux-aware **atmospheric** BCs:
+they impose the ABL log-law profile where flow enters and switch to zero-gradient
+where it leaves. One fixed mesh handles every wind direction, with a physically
+correct profile (better than a uniform/freestream guess). Needs the
+`atmosphericModels` library (`libs (atmosphericModels);` in `controlDict`).
 
-| field | `inletOutlet` patch | walls (`Terrain`,`Buildings`) | `top` |
+| field | `inletOutlet` patch | walls (`Terrain`, `Buildings`) | `top` |
 |---|---|---|---|
-| `U` | `freestreamVelocity` (freestreamValue = hourly `(u,v,0)`) | `noSlip` | `symmetry` |
-| `p` | `freestream` | `zeroGradient` | `symmetry` |
-| `k` | `inletOutlet` | `kqRWallFunction` | `symmetry` |
-| `omega` | `inletOutlet` | `omegaWallFunction` | `symmetry` |
-| `nut` | `calculated` | `nutkWallFunction` (smooth) | `symmetry` |
+| `U` | `atmBoundaryLayerInletVelocity` (log-law in `flowDir`) | `noSlip` | `symmetry` |
+| `p` | `freestreamPressure` | `zeroGradient` | `symmetry` |
+| `k` | `atmBoundaryLayerInletK` | `kqRWallFunction` | `symmetry` |
+| `epsilon` | `atmBoundaryLayerInletEpsilon` | `atmEpsilonWallFunction` (Terrain, z0) / `epsilonWallFunction` (Buildings) | `symmetry` |
+| `nut` | `calculated` | `atmNutkWallFunction` (Terrain, z0 = 0.25 m) / `nutkWallFunction` (Buildings) | `symmetry` |
 
-One fixed mesh then handles every hourly wind direction with no remeshing. (Note:
-for this dataset `u>0, v<0` all day — wind stays NW, only the speed varies ~0.45–2.5
-m/s — but the freestream setup stays valid for any direction / the larger domain.)
+The profile is parameterised in `0/include/ABLConditions` (`Uref`, `Zref`, `angle`,
+`z0`). `tools/set_wind.py --hour H` writes the hour's wind as `Uref = |(u,v)|` and
+`angle = atan2(v,u)` so `flowDir` matches the data (it auto-detects the ABL case; for
+the legacy freestream `0/U` it instead sets the `(u,v,0)` vector via a
+`// HOURLY WIND` marker).
 
-`tools/set_wind.py --hour H` writes the hour's `(u,v,0)` into the `freestreamValue`
-marker and `internalField` of `0/U` (the single per-hour knob).
+**Solver robustness — 1st-order warm-up, then 2nd-order.** On this stiff terrain mesh
+(470 m relief, ~72° non-orthogonality) starting fully 2nd-order diverges:
+`limitedLinear` on `k`/`epsilon` lets them overshoot, `nut = Cμ·k²/ε` blows up, and the
+GAMG pressure solve hits a floating-point exception (~iteration 10). So the run is
+two-stage (`job_flow.sh`): converge with **`fvSchemes_1storder`** (upwind `k`/`epsilon`,
+bounded), then restart from `latestTime` with **`fvSchemes_2ndorder`** for accuracy. A
+`potentialFoam` step initialises `U`/`p`; `fvSolution` uses plain SIMPLE
+(`consistent no`), under-relaxation, and `nNonOrthogonalCorrectors 2`.
+
+> The earlier **freestream** inlet (k-ω SST) is kept as a fallback in
+> `cases/flowCaseOldBC`. It stays bounded but its pressure residual plateaus (~0.15)
+> because freestream only weakly constrains the pressure level; the ABL setup with
+> `freestreamPressure` converges better.
 
 ---
 
@@ -276,8 +291,9 @@ referenceCase/
   <provided data>           terrain_and_buildings/ canopy/ traffic/ wind_data/ ROI/ ...
   runallgeo.sh              STAGE 0 meshing (SLURM)
   run_single_hour.sh        STAGE 1–3 driver (SLURM)
-  initialCase/              FLOW case: 0/ system/ constant/ geo/  (mesh built here)
-  dispersionCase/           DISPERSION case: 0/T system/ constant/triSurface/ geo/
+  cases/flowCase/           FLOW case: ABL inlet (atmBoundaryLayerInlet*), k-epsilon
+  cases/flowCaseOldBC/      FLOW case, freestream inlet + k-omega SST (fallback)
+  cases/dispersionCase/     DISPERSION case: 0/T system/ constant/triSurface/ geo/
   tools/
     preprocess_geometry.py  recenter + merge geometry -> geo/
     set_wind.py             hourly (u,v) -> 0/U
@@ -312,6 +328,10 @@ parallel on 96 ranks via SLURM.
   validated on the cluster; if `scalarTransportFoam` complains about `streets` on
   `U`/`phi`/`nut`, a one-line `zeroGradient` entry fixes it.
 
+- Flow must start 1st-order then restart 2nd-order (`job_flow.sh`); fully 2nd-order
+  from a cold start diverges (k/epsilon blow-up -> GAMG SIGFPE). ABL BCs need
+  `libs (atmosphericModels)` in both flow and dispersion `controlDict`.
+
 **Open items / next steps:**
 - Confirm the four receptor `site_name`s against a map.
 - Decide DT (constant vs nut/Sc_t), and tune mesh refinement vs cell count.
@@ -319,7 +339,3 @@ parallel on 96 ranks via SLURM.
 - Canopy as a porous/momentum-sink zone.
 - Domain-influence comparison on the 25 km `city4CFD` domain.
 - Daily aggregation (mean + peak) across the 24 hourly states, per receptor.
-```
-=======
-# OpenFOAM_Hackathon_Group3
->>>>>>> origin/main

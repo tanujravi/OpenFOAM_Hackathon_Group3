@@ -1,0 +1,19 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| Shared atmospheric-boundary-layer (log-law) inlet parameters.               |
+| Included by 0/U, 0/k and 0/omega so the three profiles stay consistent      |
+| (Richards & Hoxey). NO on-the-fly compilation -- these are read as DATA by  |
+| the built-in atmBoundaryLayerInlet* boundary conditions.                    |
+|                                                                             |
+| Uref is the OPTIMISATION KNOB: run_trial sets it here (one place -> all 3). |
+\*---------------------------------------------------------------------------*/
+
+flowDir         (1 0 0);     // streamwise direction (+x)
+zDir            (0 1 0);     // ground-normal / vertical (+y)
+Uref            5;           // reference wind speed   [m/s]   <-- design variable
+Zref            10;          // reference height       [m]
+z0              uniform 0.1; // aerodynamic roughness length [m]
+d               uniform 0;   // displacement height    [m]
+kappa           0.41;        // von Karman constant
+Cmu             0.09;        // k-omega/epsilon constant
+
+// ************************************************************************* //

@@ -1,0 +1,41 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2512                                 |
+|   \\  /    A nd           | Guimaraes small domain -- RECENTRED frame       |
+|    \\/     M anipulation  | simpleFoam wind precursor                       |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      k;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -2 0 0 0 0];
+
+// Freestream TKE estimate: k = 1.5*(I*U)^2, I~13%, U~1.5 m/s -> ~0.05.
+// Re-estimate if the representative wind speed changes; tune as needed.
+internalField   uniform 0.05;
+
+boundaryField
+{
+    // inletOutlet partners the freestream U: fixed inletValue on inflow faces,
+    // zeroGradient on outflow -- works for any wind direction on the ring.
+    inletOutlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 0.05;
+        value           uniform 0.05;
+    }
+
+    top         { type symmetry; }
+
+    Terrain     { type kqRWallFunction; value uniform 0.05; }
+    Buildings   { type kqRWallFunction; value uniform 0.05; }
+}
+
+
+// ************************************************************************* //
