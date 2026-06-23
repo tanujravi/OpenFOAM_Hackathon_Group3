@@ -1,52 +1,22 @@
-/*--------------------------------*- C++ -*----------------------------------*\
-  =========                 |
-  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Version:  10
-     \\/     M anipulation  |
-\*---------------------------------------------------------------------------*/
-FoamFile
-{
-    version	2.0;
-    format      ascii;
-    class       dictionary;
-    object      controlDict;
-}
+FoamFile { version 2.0; format ascii; class dictionary; object controlDict; }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// atmospheric BCs (atmBoundaryLayerInlet*, atm*WallFunction, freestreamPressure)
+// live in the ESI atmosphericModels library:
+libs            (atmosphericModels);
 
 application     simpleFoam;
-
 startFrom       latestTime;
-
 startTime       0;
-
 stopAt          endTime;
-
-endTime		2000;
-
+endTime         3000;          // max SIMPLE iters; residualControl stops earlier
 deltaT          1;
-
 writeControl    timeStep;
-
-writeInterval   2000;
-
-purgeWrite      0;
-
+writeInterval   500;
+purgeWrite      2;
 writeFormat     ascii;
-
 writePrecision  8;
-
 writeCompression off;
-
 timeFormat      general;
-
-timePrecision   8;
-
-runTimeModifiable yes;
-
-functions
-{
-}
-
+timePrecision   6;
+runTimeModifiable true;
 // ************************************************************************* //
-

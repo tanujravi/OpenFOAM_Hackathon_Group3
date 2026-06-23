@@ -1,36 +1,18 @@
-/*--------------------------------*- C++ -*----------------------------------*\
-| =========                 |                                                 |
-| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  v2512                                 |
-|   \\  /    A nd           | Guimaraes small domain -- RECENTRED frame       |
-|    \\/     M anipulation  | simpleFoam wind precursor                       |
-\*---------------------------------------------------------------------------*/
-FoamFile
-{
-    version     2.0;
-    format      ascii;
-    class       volScalarField;
-    object      nut;
-}
+FoamFile { version 2.0; format ascii; class volScalarField; object nut; }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
+#include "include/ABLConditions"
 dimensions      [0 2 -1 0 0 0 0];
-
 internalField   uniform 0;
-
 boundaryField
 {
-    inletOutlet { type calculated; value uniform 0; }
-
-    top         { type symmetry; }
-
-    // Standard (smooth) wall function -- works on every OpenFOAM build, no extra
-    // library. For atmospheric ROUGH walls (ESI v2512), add to controlDict:
-    //   libs ("libatmosphericModels.so");
-    // and use e.g. Terrain { type nutkAtmRoughWallFunction; z0 uniform 0.3; value uniform 0; }
-    Terrain     { type nutkWallFunction; value uniform 0; }
-    Buildings   { type nutkWallFunction; value uniform 0; }
+    inletOutlet  { type calculated; value uniform 0; }
+    top          { type symmetry; }
+    Terrain
+    {
+        type            atmNutkWallFunction;
+        z0               $z0;
+        value            uniform 0;
+    }
+    Buildings    { type nutkWallFunction; value uniform 0; }
 }
-
-
 // ************************************************************************* //

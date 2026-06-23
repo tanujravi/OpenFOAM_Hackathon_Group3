@@ -1,0 +1,25 @@
+FoamFile { version 2.0; format ascii; class volScalarField; object epsilon; }
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+#include "include/ABLConditions"
+dimensions      [0 2 -3 0 0 0 0];
+internalField   uniform $epsilonInlet;
+boundaryField
+{
+    inletOutlet
+    {
+        type            atmBoundaryLayerInletEpsilon;
+        #include         "include/ABLConditions"
+        z0               $z0;
+        value            uniform $epsilonInlet;
+    }
+    top         { type symmetry; }
+    Terrain
+    {
+        type            atmEpsilonWallFunction;
+        #include         "include/ABLConditions"
+        z0               $z0;
+        value            uniform $epsilonInlet;
+    }
+    Buildings   { type epsilonWallFunction; value uniform $epsilonInlet; }
+}
+// ************************************************************************* //

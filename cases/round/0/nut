@@ -1,0 +1,74 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  6
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      nut;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -1 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    #include        "include/ABLConditions"
+
+    inletOutlet
+    {
+        type            calculated;
+        value           uniform 0;
+    }
+
+    top
+    {
+	type		symmetry;
+    }
+
+    Buildings
+    {
+        type            nutkWallFunction;
+        value           uniform 0.0;
+    }
+
+    Terrain
+    {
+        type            atmNutkWallFunction;
+        z0		$z0;
+        value           uniform 0;
+    }
+
+    "(Water|Ocean)"
+    {
+        type            atmNutkWallFunction;
+        z0		$z0water;
+        value           uniform 0;
+    }
+
+    Vegetation
+    {
+        type            atmNutkWallFunction;
+        z0		$z0vegetation;
+        value           uniform 0;
+    }
+
+    Forest
+    {
+        type            atmNutkWallFunction;
+        z0		$z0forest;
+        value           uniform 0;
+    }
+
+
+
+}
+
+// ************************************************************************* //

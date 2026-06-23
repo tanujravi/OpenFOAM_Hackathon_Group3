@@ -1,0 +1,45 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  6
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+
+    inletOutlet
+    {
+        type            freestreamPressure;
+        #include        "include/ABLConditions"
+        freestreamValue uniform $pressure;
+        supersonic      0;
+        value           uniform $pressure;
+    }
+
+    top
+    {
+        type            symmetry;
+    }
+
+    "(Buildings|Terrain|Water|Ocean|Forest|Vegetation)"
+    {
+        type            zeroGradient;
+    }
+
+}
+
+// ************************************************************************* //

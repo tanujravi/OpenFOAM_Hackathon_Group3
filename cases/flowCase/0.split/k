@@ -1,0 +1,18 @@
+FoamFile { version 2.0; format ascii; class volScalarField; object k; }
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+dimensions      [0 2 -2 0 0 0 0];
+internalField   uniform 0.05;
+boundaryField
+{
+    inlet
+    {
+        type            turbulentIntensityKineticEnergyInlet;
+        intensity       0.10;            // 10% turbulence intensity
+        value           uniform 0.05;
+    }
+    outlet      { type inletOutlet; inletValue uniform 0.05; value uniform 0.05; }
+    top         { type symmetry; }
+    Terrain     { type kqRWallFunction; value uniform 0.05; }
+    Buildings   { type kqRWallFunction; value uniform 0.05; }
+}
+// ************************************************************************* //
