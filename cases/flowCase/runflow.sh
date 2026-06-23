@@ -23,6 +23,14 @@ decomposePar -force > logs/decomposePar_flow.log 2>&1 \
     && echo "    done" \
     || { echo "    FAILED — check logs/decomposePar_flow.log"; exit 1; }
 
+echo "=== [1b] purge snappyHexMesh time dirs from processor* ==="
+# snappyHexMesh leaves processor*/1/ and processor*/2/ (castellated + snapped mesh).
+# simpleFoam would pick those up as latestTime and fail looking for p/U/k/omega there.
+for proc in processor*/; do
+    find "$proc" -maxdepth 1 -mindepth 1 -type d ! -name '0' -exec rm -rf {} + 2>/dev/null || true
+done
+echo "    done"
+
 echo "=== [2/4] simpleFoam (${nprocs} ranks) ==="
 mpirun -np $nprocs simpleFoam -parallel > logs/simpleFoam.log 2>&1
 # Note: simpleFoam exits 0 even when it hits endTime without converging,
