@@ -35,6 +35,7 @@ boundaryField
 
     Terrain     { type kqRWallFunction; value uniform 0.05; }
     Buildings   { type kqRWallFunction; value uniform 0.05; }
+    bottom      { type kqRWallFunction; value uniform 0.05; }
 }
 
 

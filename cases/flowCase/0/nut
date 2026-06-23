@@ -30,6 +30,7 @@ boundaryField
     // and use e.g. Terrain { type nutkAtmRoughWallFunction; z0 uniform 0.3; value uniform 0; }
     Terrain     { type nutkWallFunction; value uniform 0; }
     Buildings   { type nutkWallFunction; value uniform 0; }
+    bottom      { type nutkWallFunction; value uniform 0; }
 }
 
 

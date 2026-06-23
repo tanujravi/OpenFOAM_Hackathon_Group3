@@ -33,6 +33,7 @@ boundaryField
 
     Terrain     { type omegaWallFunction; value uniform 0.1; }
     Buildings   { type omegaWallFunction; value uniform 0.1; }
+    bottom      { type omegaWallFunction; value uniform 0.1; }
 }
 
 

@@ -32,6 +32,7 @@ boundaryField
 
     Terrain     { type zeroGradient; }
     Buildings   { type zeroGradient; }
+    bottom      { type zeroGradient; }
 }
 
 
