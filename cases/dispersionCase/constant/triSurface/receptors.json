@@ -13,7 +13,9 @@
       197031.44,
       192.54
     ],
-    "site_name": "TBD (confirm on map)"
+    "site_name": "Hospital da Senhora da Oliveira (Public Hospital)",
+    "site_slug": "Hospital",
+    "latlon": [41.44246, -8.30559]
   },
   {
     "id": "receptor2",
@@ -29,7 +31,9 @@
       197339.06,
       209.71
     ],
-    "site_name": "TBD (confirm on map)"
+    "site_name": "Escola Secundaria Francisco de Holanda",
+    "site_slug": "FranciscoHolanda",
+    "latlon": [41.44526, -8.28723]
   },
   {
     "id": "receptor3",
@@ -45,7 +49,9 @@
       197293.17,
       195.55
     ],
-    "site_name": "TBD (confirm on map)"
+    "site_name": "Escola Secundaria Martins Sarmento",
+    "site_slug": "MartinsSarmento",
+    "latlon": [41.44483, -8.29688]
   },
   {
     "id": "receptor4",
@@ -61,6 +67,8 @@
       198070.12,
       266.93
     ],
-    "site_name": "TBD (confirm on map)"
+    "site_name": "Escola Basica/Secundaria de Santos Simoes",
+    "site_slug": "SantosSimoes",
+    "latlon": [41.45186, -8.27185]
   }
 ]

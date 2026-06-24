@@ -32,7 +32,7 @@ Usage:
 """
 import argparse, csv, os, sys
 
-HERE = os.path.dirname(os.path.abspath(HERE_FILE := __file__))
+HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
 SCEN_FLAT = {"reference": 1.0, "S1": 0.8, "S2": 0.6}

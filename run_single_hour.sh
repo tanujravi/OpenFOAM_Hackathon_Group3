@@ -27,7 +27,11 @@ set -e
 module load OpenFOAM/v2512-foss-2025a 2>/dev/null || true
 source "$FOAM_INST_DIR/OpenFOAM-v2512/etc/bashrc" 2>/dev/null || true
 
-ROOT="$(cd "$(dirname "$0")" && pwd)"; cd "$ROOT"
+# Under sbatch, $0 is the spooled copy in /var/spool/slurm/... -- so anchor on
+# SLURM_SUBMIT_DIR (the dir you ran `sbatch` from); fall back to $0 for plain bash.
+ROOT="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "$0")" && pwd)}"; cd "$ROOT"
+echo "[run_single_hour] ROOT=$ROOT"
+[ -d "cases/flowCase" ] || { echo "ERROR: cases/flowCase not under ROOT=$ROOT. Submit from the repo root (sbatch run_single_hour.sh)."; exit 1; }
 HOUR=${HOUR:-0}; SCENARIO=${SCENARIO:-reference}; POLLUTANTS=${POLLUTANTS:-"CO NOx"}
 HALFWIDTH=${HALFWIDTH:-6.0}; NPROCS=${NPROCS:-96}; DT=${DT:-1.0}
 FLOW=cases/flowCase; DISP=cases/dispersionCase; TOOLS=tools

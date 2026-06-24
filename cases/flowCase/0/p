@@ -12,6 +12,7 @@ boundaryField
         value           uniform $pressure;
     }
     top                  { type symmetry; }
-    "(Buildings|Terrain)" { type zeroGradient; }
+    Buildings { type zeroGradient; } 
+    Terrain { type zeroGradient; }
 }
 // ************************************************************************* //
