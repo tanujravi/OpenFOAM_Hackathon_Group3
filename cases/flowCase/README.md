@@ -43,9 +43,19 @@ GAMG floating-point exception ~iter 10). So:
 - `system/fvSchemes_2ndorder` — `limitedLinear` (accurate), the **restart**.
 - `system/fvSchemes` — currently = the 1st-order set (active default).
 
-`job_flow.sh` runs the full recipe: `decomposePar → potentialFoam → simpleFoam`
-(1st-order) → swap to 2nd-order, bump `endTime`, restart from `latestTime` →
-`reconstructPar`.
+`job_flow.sh` runs the full recipe: **carve the `streets` patch (one-time, before
+solving)** → `decomposePar → potentialFoam → simpleFoam` (1st-order) → swap to
+2nd-order, bump `endTime`, restart from `latestTime` → `reconstructPar`.
+
+## Street patch carved here (before the solve)
+`job_flow.sh` first carves `streets` out of `Terrain` (idempotent — skipped if the
+patch already exists): `foamFormatConvert` to ASCII if needed →
+`make_street_patches.py` → `createPatch -overwrite` → `add_streets_bc.py` (clones the
+`Terrain` boundary entry into `streets` for the uniform `0/{U,p,k,epsilon,nut}`).
+Doing this **before** the solve means the frozen fields are written on the final
+`Terrain`+`streets` mesh, so `../dispersionCase` can reuse them with matching face
+counts. (Carving after the solve would shrink `Terrain` and desync the field sizes.)
+This produces `geo/streets_face_segments.csv`, which the dispersion stage reuses.
 
 ## Key files
 ```
@@ -70,5 +80,6 @@ Output: a converged time directory with frozen `U`, `phi`, `nut` → consumed by
 > The previous **freestream + k-ω SST** setup is preserved in `../flowCaseOldBC` as a
 > fallback (it stays bounded but its pressure residual plateaus ~0.15).
 >
-> Needs an **ASCII** `polyMesh` for the dispersion carver; if binary, `foamFormatConvert`.
+> The carve needs an **ASCII** `polyMesh`; `job_flow.sh` runs `foamFormatConvert`
+> automatically if the mesh is binary.
 > Regenerable: `processor*/`, time dirs, `constant/polyMesh/` (re-meshable).

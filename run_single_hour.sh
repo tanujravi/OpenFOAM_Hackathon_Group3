@@ -10,16 +10,16 @@
 # =============================================================================
 #  Single-hour DISPERSION driver (assumes the flow is already converged).
 #
-#  Prereq: run the flow first in cases/flowCase (job_flow.sh) so it holds a
-#  converged time dir with U / phi / nut. This script then, for one hour / one
-#  scenario:
-#    1. copy the frozen mesh + U/phi/nut into cases/dispersionCase (+ ASCII mesh)
-#    2. carve the 'streets' patch (make_street_patches.py) -> createPatch
-#    3. per pollutant: set per-segment emission -> scalarTransportFoam
+#  Prereq: run the flow first in cases/flowCase (job_flow.sh). job_flow.sh carves
+#  the 'streets' patch into the flow mesh BEFORE solving, so Terrain is already
+#  split and the frozen U/phi/nut match the Terrain+streets face counts. This
+#  script then, for one hour / one scenario:
+#    1. reuse that split mesh + frozen U/phi/nut (no carve) + streets map
+#    2. per pollutant: set per-segment emission on 'streets' -> scalarTransportFoam
 #       (receptor function objects sample T at the 4 ROI surfaces)
-#    4. receptor_table.py -> results/.../receptor_table.csv  (ug/m^3)
+#    3. receptor_table.py -> results/.../receptor_table.csv  (ug/m^3)
 #
-#  Config via env: HOUR=0 SCENARIO=reference POLLUTANTS="CO NOx" HALFWIDTH=6.0
+#  Config via env: HOUR=0 SCENARIO=reference POLLUTANTS="CO NOx"
 #                  NPROCS=96  DT=1.0  FLOWTIME=latestTime
 #  Run:  sbatch run_single_hour.sh   |   HOUR=8 SCENARIO=S2 bash run_single_hour.sh
 # =============================================================================
@@ -41,27 +41,23 @@ FLOWTIME=${FLOWTIME:-$(foamListTimes -case "$FLOW" -latestTime)}
 [ -f "$FLOW/$FLOWTIME/U" ] || { echo "ERROR: $FLOW/$FLOWTIME/U missing."; exit 1; }
 log "using frozen flow from $FLOW/$FLOWTIME"
 
-# ----------------------------------------------- STAGE 1: prep dispersion + carve
-log "STAGE 1  mesh + frozen fields -> $DISP, then carve streets"
+# --------------------------------------------- STAGE 1: reuse split mesh + fields
+# The 'streets' patch is carved ONCE in the flow case (job_flow.sh) BEFORE the flow
+# solve, so Terrain is already split there and the frozen U/phi/nut are written on
+# the Terrain+streets mesh. We reuse that mesh + fields directly (face counts match)
+# -- no carve/createPatch here, which would desync the copied field sizes.
+log "STAGE 1  reuse split mesh + frozen fields from $FLOW"
+grep -qE "^[[:space:]]*streets$" "$FLOW/constant/polyMesh/boundary" || {
+  echo "ERROR: no 'streets' patch in $FLOW mesh. Run job_flow.sh (it carves streets"
+  echo "       into the flow mesh before solving)."; exit 1; }
 rm -rf "$DISP/constant/polyMesh"
 cp -r "$FLOW/constant/polyMesh" "$DISP/constant/"
 cp "$FLOW/$FLOWTIME/U"   "$DISP/0/U"
 cp "$FLOW/$FLOWTIME/phi" "$DISP/0/phi"
 [ -f "$FLOW/$FLOWTIME/nut" ] && cp "$FLOW/$FLOWTIME/nut" "$DISP/0/nut"
-
-# the carver needs an ASCII polyMesh; convert in place if it came out binary
-if head -c 4000 "$DISP/constant/polyMesh/points" | grep -qi "format *binary"; then
-    log "  polyMesh is binary -> foamFormatConvert to ASCII"
-    foamDictionary -entry writeFormat -set ascii "$DISP/system/controlDict" >/dev/null 2>&1 || true
-    ( cd "$DISP" && foamFormatConvert -constant > "$ROOT/logs/formatConvert.log" 2>&1 )
-fi
-
-python3 "$TOOLS/make_street_patches.py" --case "$DISP" \
-        --roads "$DISP/geo/snapped_road_segments_recentred.csv" \
-        --half-width "$HALFWIDTH" | tee "$ROOT/logs/carve.log"
-( cd "$DISP"; createPatch -overwrite > "$ROOT/logs/createPatch.log" 2>&1 )
-# createPatch may not propagate the new patch into the 0/ fields -> ensure it
-python3 "$TOOLS/add_streets_bc.py" --case "$DISP" --fields U phi nut T | tee "$ROOT/logs/add_streets_bc.log"
+mkdir -p "$DISP/geo"
+cp "$FLOW/geo/streets_face_segments.csv" "$DISP/geo/"   # face->segment map (from the flow carve)
+# 0/T (authored, 4 patches) gains its 'streets' entry from set_emissions below.
 
 # --------------------------------------------- STAGE 2: dispersion per pollutant
 for POLL in $POLLUTANTS; do

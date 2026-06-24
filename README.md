@@ -35,7 +35,7 @@ patch creation, the emission mapping, receptor sampling, and the orchestration.
                           │  frozen flow fields
         ┌─────────────────┴───────────────────┐
         │  STAGE 2  DISPERSION (dispersionCase)│  scalarTransportFoam on frozen flow
-        │  carve streets → set emission → solve│  one passive scalar per pollutant
+        │  set per-segment emission -> solve   │  one passive scalar per pollutant
         └─────────────────┬───────────────────┘
                           │  T (kg/m³)
         ┌─────────────────┴───────────────────┐
@@ -195,23 +195,36 @@ with the emission values for each street inside the patch (face). Right now, the
 This still needs to be tested in the cluster.
 
 
-## 6.1 Street patch creation (post-mesh, no remesh)
+## 6.1 Street patch creation (carved in the FLOW case, BEFORE solving)
 
-The roads are **not** in the mesh (only terrain + buildings are). To apply the
-emission as a surface source without remeshing, the road footprint is carved out of
-the `Terrain` ground **after** meshing:
+The roads are **not** in the mesh (only terrain + buildings are), so the road
+footprint is carved out of the `Terrain` ground as a `streets` wall patch. This is
+done **once in `cases/flowCase`, before the flow solve** (inside `job_flow.sh`), so
+every field is written on the final `Terrain`+`streets` mesh.
 
-1. `tools/make_street_patches.py` reads `constant/polyMesh`, finds the `Terrain`
-   boundary faces whose centres lie within `--half-width` (default 6 m) of any road
-   polyline, tags each with its nearest segment, and writes:
-   - `constant/polyMesh/sets/streets` (a faceSet),
-   - `system/createPatchDict` (one `streets` wall patch from that set),
-   - `geo/streets_face_segments.csv` (face → segment id + face area, in patch order).
-2. `createPatch -overwrite` splits those faces off `Terrain` into a new **`streets`**
-   patch and adds the patch (inheriting `Terrain`'s `zeroGradient`) to every field.
+> Why before the solve: `createPatch` *moves* faces out of `Terrain` (e.g.
+> 570191 -> 542115), so carving AFTER the flow would leave the copied non-uniform
+> boundary lists (e.g. `nut` on `Terrain`) the wrong length -> a fatal size mismatch.
+> Carving first means the fields are generated on the split mesh and stay consistent.
 
-> Check the carver line `segments with faces: N/196`. If N < 196, raise
-> `--half-width` or refine the mesh near roads.
+1. `tools/make_street_patches.py` finds the `Terrain` faces whose centres lie within
+   `--half-width` (default 6 m) of any road polyline, tags each with its nearest
+   segment (numpy-vectorised), and writes `constant/polyMesh/sets/streets`,
+   `system/createPatchDict`, and `geo/streets_face_segments.csv` (face -> segment +
+   area, in patch order). Any segment otherwise *starved* (always 2nd-nearest, or
+   sitting under a building) is force-assigned its nearest ground face, so all 196
+   segments are represented and total emission is preserved.
+2. `createPatch -overwrite` splits those faces off `Terrain` into the `streets` patch.
+3. `tools/add_streets_bc.py` clones each field's `Terrain` entry into a `streets`
+   entry in the **uniform** `0/{U,p,k,epsilon,nut}` (size-agnostic) — `createPatch`
+   does not propagate the new patch into the fields by itself.
+
+The dispersion case then **reuses** this split mesh + frozen fields +
+`streets_face_segments.csv` and never carves, so field/patch sizes always match.
+
+> Check `make_street_patches`'s `segments with faces: N/196` (now always 196/196 via
+> the force-assign). The mesh must be **ASCII** for the carver; `job_flow.sh` runs
+> `foamFormatConvert` first if it is binary.
 
 ### 6.2 Emission mapping (the scenario logic)
 **Ricardo Andrade Note**: Should ignore for now the different scenario part and just focus on reference. 
