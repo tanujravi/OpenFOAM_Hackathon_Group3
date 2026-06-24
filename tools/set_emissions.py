@@ -44,13 +44,20 @@ def write_nonuniform_gradient(t_path, grads):
         len(grads), "\n".join("%.10g" % g for g in grads))
     body = ("\n        type            fixedGradient;\n"
             "        gradient        %s;\n    " % lst)
-    # replace the ENTIRE streets{...} body (robust whether it was zeroGradient
-    # from createPatch or a previous fixedGradient)
-    new, n = re.subn(r"(streets\s*\{).*?(\})",
-                     lambda m: m.group(1) + body + m.group(2),
-                     txt, count=1, flags=re.S)
+    if re.search(r"(^|\n)\s*streets\s*\{", txt):
+        # replace the existing streets{...} body (zeroGradient from createPatch
+        # or a previous fixedGradient)
+        new, n = re.subn(r"(streets\s*\{).*?(\})",
+                         lambda m: m.group(1) + body + m.group(2),
+                         txt, count=1, flags=re.S)
+    else:
+        # createPatch did not propagate the patch into the field -> insert it
+        entry = "    streets\n    {%s}\n" % body
+        new, n = re.subn(r"(boundaryField\s*\{[ \t]*\n)",
+                         lambda m: m.group(1) + entry, txt, count=1)
     if n != 1:
-        sys.exit("ERROR: no streets{} block in %s (run createPatch first)" % t_path)
+        sys.exit("ERROR: could not write streets gradient in %s "
+                 "(no streets block and no boundaryField{ found)" % t_path)
     open(t_path, "w").write(new)
 
 

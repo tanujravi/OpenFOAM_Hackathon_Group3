@@ -212,14 +212,56 @@ def carve(case, roads_csv, terrain_patch, half_width, set_name, patch_name):
                 d2 = (cxx - (ax + t * dx)) ** 2 + (cyy - (ay + t * dy)) ** 2
             upd = d2 < best
             best[upd] = d2[upd]; bseg[upd] = si
-    sel = np.where(best <= half_width * half_width)[0]
-    seg_by_local = dict(zip(cand[sel].tolist(), bseg[sel].tolist()))
+    selmask = best <= half_width * half_width
+    seg_of_local = dict(zip(cand[selmask].tolist(), bseg[selmask].tolist()))
+
+    # Guarantee every segment gets >= 1 face. The nearest-assignment above can
+    # STARVE a segment that is everywhere only the 2nd-nearest road (parallel
+    # roads, junctions, or a road whose ground lies under a building) -- raising
+    # --half-width never fixes that. For each starved segment, steal its nearest
+    # ground face from a donor that keeps >= 1 face. Total emission is preserved
+    # because set_emissions normalises each segment by its own face area.
+    cnt = {}
+    for sg in seg_of_local.values():
+        cnt[sg] = cnt.get(sg, 0) + 1
+    fx = cen[:, 0]; fy = cen[:, 1]
+    forced = 0
+    for s in range(nseg):
+        if cnt.get(s, 0) > 0:
+            continue
+        a = np.asarray(segs[s], dtype=float)
+        d2 = np.full(nf, np.inf)                      # dist^2 from EVERY terrain face to seg s
+        for j in range(len(segs[s]) - 1):
+            ax, ay = a[j]; bx, by = a[j + 1]
+            dx = bx - ax; dy = by - ay; l2 = dx * dx + dy * dy
+            if l2 == 0.0:
+                dd = (fx - ax) ** 2 + (fy - ay) ** 2
+            else:
+                t = ((fx - ax) * dx + (fy - ay) * dy) / l2
+                np.clip(t, 0.0, 1.0, out=t)
+                dd = (fx - (ax + t * dx)) ** 2 + (fy - (ay + t * dy)) ** 2
+            d2 = np.minimum(d2, dd)
+        for li in np.argsort(d2):
+            li = int(li)
+            cur = seg_of_local.get(li)
+            if cur is None:
+                seg_of_local[li] = s; cnt[s] = cnt.get(s, 0) + 1
+            elif cnt.get(cur, 0) > 1:
+                cnt[cur] -= 1; seg_of_local[li] = s; cnt[s] = cnt.get(s, 0) + 1
+            else:
+                continue                              # don't starve the donor; try next
+            print("  segment %d: no face within %.1f m -> nearest ground face (%.2f m)"
+                  % (s, half_width, float(d2[li] ** 0.5)), flush=True)
+            forced += 1
+            break
+    if forced:
+        print("  (%d starved segment(s) force-assigned; emission preserved)" % forced, flush=True)
 
     chosen = []      # (global_face_label, segment_id, area), ascending face label
-    for li in np.sort(cand[sel]).tolist():
+    for li in sorted(seg_of_local):
         gf = start + li
         verts = [pts[i] for i in faces[gf]]
-        chosen.append((gf, seg_by_local[li], poly_area_3d(verts)))
+        chosen.append((gf, seg_of_local[li], poly_area_3d(verts)))
 
     write_faceset(os.path.join(pm, "sets", set_name), set_name, [c[0] for c in chosen])
     with open(os.path.join(case, "system", "createPatchDict"), "w") as f:
