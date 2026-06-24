@@ -23,9 +23,11 @@ porous zone later, not meshed, and will be transformed when that step is built.
 """
 import os, json, glob, math
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# tools live in <repo>/cases/tools, so the repo root (provided inputs) is three
+# levels up; the recentred geo/ is written where the pipeline reads it.
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TB   = os.path.join(ROOT, "terrain_and_buildings")
-GEO  = os.path.join(ROOT, "geo")
+GEO  = os.path.join(ROOT, "cases", "flowCase", "geo")
 os.makedirs(GEO, exist_ok=True)
 
 

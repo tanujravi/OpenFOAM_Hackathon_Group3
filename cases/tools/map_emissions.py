@@ -33,7 +33,7 @@ Usage:
 import argparse, csv, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
+ROOT = os.path.dirname(os.path.dirname(HERE))  # repo root: tools live in cases/tools
 
 SCEN_FLAT = {"reference": 1.0, "S1": 0.8, "S2": 0.6}
 

@@ -19,7 +19,7 @@ patch creation, the emission mapping, receptor sampling, and the orchestration.
                 provided data (read-only)
    terrain + buildings + canopy + roads + emissions + wind
                           │
-            tools/preprocess_geometry.py   (recenter to origin, merge buildings)
+            cases/tools/preprocess_geometry.py   (recenter to origin, merge buildings)
                           │
                        geo/  (recentred OBJs + transform.json)
                           │
@@ -43,7 +43,7 @@ patch creation, the emission mapping, receptor sampling, and the orchestration.
         └──────────────────────────────────────┘  results/.../receptor_table.csv (µg/m³)
 ```
 
-Driver `run_single_hour.sh` chains Stages 1–3 for one hour / one scenario.
+Driver `cases/run_single_hour.sh` chains Stages 1–3 for one hour / one scenario.
 The same mesh, BCs, solver settings and temporal strategy are reused across all
 four scenarios — **only the emission scaling changes** — so comparisons are fair.
 
@@ -91,16 +91,16 @@ Translation-invariant and therefore **not** transformed: the wind `(u, v)` vecto
 and the per-segment emission factors. No rotation is applied (the inlet handles
 arbitrary wind direction — see §5).
 
-`tools/preprocess_geometry.py` performs the recenter, merges `Mesh_Buildings_0..5`
+`cases/tools/preprocess_geometry.py` performs the recenter, merges `Mesh_Buildings_0..5`
 into one `Mesh_Buildings.obj` (far-field `_6` excluded), recentres `ROI.obj` and the
 road coordinates, and writes everything to `geo/`.
 
 ---
 
-## 4. Stage 0 — Meshing strategy (`runallgeo.sh`)
+## 4. Stage 0 — Meshing strategy (`cases/flowCase/runallgeo.sh`)
 
 A single `snappyHexMesh` mesh is built **once** and reused for every hour and
-scenario (fairness + cost). Driven on the cluster by `runallgeo.sh` (SLURM, 96
+scenario (fairness + cost). Driven on the cluster by `cases/flowCase/runallgeo.sh` (SLURM, 96
 ranks): `surfaceFeatureExtract → blockMesh → decomposePar → snappyHexMesh -parallel
 → reconstructParMesh → checkMesh`.
 
@@ -156,7 +156,7 @@ correct profile (better than a uniform/freestream guess). Needs the
 | `nut` | `calculated` | `atmNutkWallFunction` (Terrain, z0 = 0.25 m) / `nutkWallFunction` (Buildings) | `symmetry` |
 
 The profile is parameterised in `0/include/ABLConditions` (`Uref`, `Zref`, `angle`,
-`z0`). `tools/set_wind.py --hour H` writes the hour's wind as `Uref = |(u,v)|` and
+`z0`). `cases/tools/set_wind.py --hour H` writes the hour's wind as `Uref = |(u,v)|` and
 `angle = atan2(v,u)` so `flowDir` matches the data (it auto-detects the ABL case; for
 the legacy freestream `0/U` it instead sets the `(u,v,0)` vector via a
 `// HOURLY WIND` marker).
@@ -207,7 +207,7 @@ every field is written on the final `Terrain`+`streets` mesh.
 > boundary lists (e.g. `nut` on `Terrain`) the wrong length -> a fatal size mismatch.
 > Carving first means the fields are generated on the split mesh and stay consistent.
 
-1. `tools/make_street_patches.py` finds the `Terrain` faces whose centres lie within
+1. `cases/tools/make_street_patches.py` finds the `Terrain` faces whose centres lie within
    `--half-width` (default 6 m) of any road polyline, tags each with its nearest
    segment (numpy-vectorised), and writes `constant/polyMesh/sets/streets`,
    `system/createPatchDict`, and `geo/streets_face_segments.csv` (face -> segment +
@@ -215,7 +215,7 @@ every field is written on the final `Terrain`+`streets` mesh.
    sitting under a building) is force-assigned its nearest ground face, so all 196
    segments are represented and total emission is preserved.
 2. `createPatch -overwrite` splits those faces off `Terrain` into the `streets` patch.
-3. `tools/add_streets_bc.py` clones each field's `Terrain` entry into a `streets`
+3. `cases/tools/add_streets_bc.py` clones each field's `Terrain` entry into a `streets`
    entry in the **uniform** `0/{U,p,k,epsilon,nut}` (size-agnostic) — `createPatch`
    does not propagate the new patch into the fields by itself.
 
@@ -229,7 +229,7 @@ The dispersion case then **reuses** this split mesh + frozen fields +
 ### 6.2 Emission mapping (the scenario logic)
 **Ricardo Andrade Note**: Should ignore for now the different scenario part and just focus on reference. 
 
-`tools/map_emissions.py` applies the mobility-scenario scaling to the per-segment
+`cases/tools/map_emissions.py` applies the mobility-scenario scaling to the per-segment
 hourly factors (this is the "correct scenario implementation" deliverable):
 
 | Scenario | Definition | Scaling |
@@ -239,7 +239,7 @@ hourly factors (this is the "correct scenario implementation" deliverable):
 | S2 | 40% → EV | ×0.6 all segments |
 | S3 | Metro Bus (N101) | ×0.5 on the 50%-list, ×0.7 on the 30%-list, ×1.0 elsewhere |
 
-`tools/set_emissions.py` then converts the scaled per-segment rate to a wall flux and
+`cases/tools/set_emissions.py` then converts the scaled per-segment rate to a wall flux and
 writes it as a **non-uniform `fixedGradient`** on the `streets` patch in `0/T`:
 
 ```
@@ -259,7 +259,7 @@ absolute concentration. (Sanity check: a ~30 g/h segment over ~1000 m² gives
 **Ricardo Andrade Note:** This is just a Function object on the patches. The ROI should probably be something like for each street an area average of the polution of the air above it
 
 The four receptors are the four connected components of `ROI.obj`, split by
-`tools/split_roi.py` into `dispersionCase/constant/triSurface/receptor{1..4}.obj`
+`cases/tools/split_roi.py` into `dispersionCase/constant/triSurface/receptor{1..4}.obj`
 (+ `receptors.json` with each centroid in recentred and UTM coords).
 
 `system/receptors` defines four `surfaceFieldValue` function objects, each an
@@ -267,7 +267,7 @@ The four receptors are the four connected components of `ROI.obj`, split by
 `scalarTransportFoam` (via `controlDict` `functions{}`) and write
 `postProcessing/receptorN/.../surfaceFieldValue.dat`.
 
-`tools/receptor_table.py` reads those, converts to **µg/m³**, and writes
+`cases/tools/receptor_table.py` reads those, converts to **µg/m³**, and writes
 `results/<run>/receptor_table.csv`. With `--reference <dir>` it adds absolute and
 **% change vs the reference scenario** per receptor/pollutant.
 
@@ -276,21 +276,30 @@ The four receptors are the four connected components of `ROI.obj`, split by
 
 ---
 
-## 8. Orchestration — `run_single_hour.sh` 
+## 8. Orchestration — flow precursor, then dispersion driver
 **Ricardo Andrade Note: IGNORE THIS FOR NOW**
 
-One command for a full single-hour, single-scenario run on an already-meshed case:
+A one-hour run is **two steps**, both launched from inside `cases/`. The flow is
+solved once for the hour (it carves the `streets` patch into its own mesh *before*
+solving), then the dispersion driver `cases/run_single_hour.sh` reuses that frozen
+flow for each scenario / pollutant.
 
 ```bash
-# defaults: HOUR=0 SCENARIO=reference POLLUTANTS="CO NOx" HALFWIDTH=6.0 NPROCS=96
-sbatch run_single_hour.sh
-HOUR=8 SCENARIO=S2 bash run_single_hour.sh        # any hour / scenario
-SKIP_FLOW=1 SCENARIO=S1 bash run_single_hour.sh   # reuse an existing wind solve
+# (0) mesh once (per study):   cd cases/flowCase && sbatch runallgeo.sh
+# (1) set the hour's wind:     python3 ../tools/set_wind.py --case . --hour 0
+# (2) flow precursor:          sbatch job_flow.sh      # carve streets + 2-stage simpleFoam
+# (3) dispersion + receptors (run from cases/):
+cd ..                                                  # -> cases/
+mkdir -p logs results                                  # SLURM needs logs/ to exist before sbatch
+HOUR=0 SCENARIO=reference sbatch run_single_hour.sh    # defaults: POLLUTANTS="CO NOx" NPROCS=128 DT=1.0
+HOUR=0 SCENARIO=S2        bash  run_single_hour.sh     # any hour / scenario
 ```
 
-Stages: set wind → `simpleFoam` (parallel) → copy frozen fields + carve `streets` →
+Stage 1 (`cases/flowCase/job_flow.sh`): carve `streets` → `potentialFoam` →
+`simpleFoam` (1st- then 2nd-order, parallel) → frozen `U`, `phi`, `nut`.
+Stages 2–3 (`cases/run_single_hour.sh`): reuse the split mesh + frozen fields, then
 per pollutant `set_emissions` + `scalarTransportFoam` (parallel) → receptor table.
-Outputs land in `results/h<HOUR>_<SCENARIO>/` (`T_CO`, `T_NOx` in kg/m³;
+Outputs land in `cases/results/h<HOUR>_<SCENARIO>/` (`T_CO`, `T_NOx` in kg/m³;
 `receptor_table.csv` in µg/m³; per-pollutant `pp_*` postProcessing).
 
 ---
@@ -299,28 +308,33 @@ Outputs land in `results/h<HOUR>_<SCENARIO>/` (`T_CO`, `T_NOx` in kg/m³;
 
 ```
 referenceCase/
-  README.md                 this file
-  CLAUDE.md, PROJECT_HANDOFF.md   standing rules + full handoff
-  <provided data>           terrain_and_buildings/ canopy/ traffic/ wind_data/ ROI/ ...
-  runallgeo.sh              STAGE 0 meshing (SLURM)
-  run_single_hour.sh        STAGE 1–3 driver (SLURM)
-  cases/flowCase/           FLOW case: ABL inlet (atmBoundaryLayerInlet*), k-epsilon
-  cases/flowCaseOldBC/      FLOW case, freestream inlet + k-omega SST (fallback)
-  cases/dispersionCase/     DISPERSION case: 0/T system/ constant/triSurface/ geo/
-  tools/
-    preprocess_geometry.py  recenter + merge geometry -> geo/
-    set_wind.py             hourly (u,v) -> 0/U
-    make_street_patches.py  carve the streets patch (post-mesh)
-    map_emissions.py        per-segment scenario scaling
-    set_emissions.py        per-segment non-uniform fixedGradient on streets
-    split_roi.py            ROI -> 4 receptor surfaces
-    receptor_table.py       receptor µg/m³ table (+ % vs reference)
-  results/                  per-run receptor tables + fields (regenerable)
-  backups/                  timestamped copies of edited dicts
+  README.md                   this file
+  CLAUDE.md                   standing rules
+  <provided data>             terrain_and_buildings/ canopy/ traffic/ wind_data/ ROI/
+                              road_ids_reduction.txt   (read-only inputs, repo root)
+  cases/
+    run_single_hour.sh        STAGES 2–3 dispersion driver (SLURM), per hour/scenario
+    tools/
+      preprocess_geometry.py  recenter + merge geometry -> cases/flowCase/geo/
+      set_wind.py             hourly (u,v) -> ABL Uref/angle (or 0/U vector)
+      make_street_patches.py  carve the streets patch (in flowCase, before solve)
+      add_streets_bc.py       clone Terrain BC -> streets in 0/ fields
+      map_emissions.py        per-segment scenario scaling (reads repo-root traffic/, road_ids)
+      set_emissions.py        per-segment non-uniform fixedGradient on streets
+      split_roi.py            ROI -> 4 receptor surfaces
+      receptor_table.py       receptor µg/m³ table (+ % vs reference)
+    flowCase/                 FLOW case: ABL inlet (atmBoundaryLayerInlet*), k-epsilon
+      runallgeo.sh            STAGE 0 meshing (SLURM)
+      job_flow.sh             STAGE 1 flow: carve streets + 2-stage simpleFoam (SLURM)
+      0/ system/ constant/ geo/
+    flowCaseOldBC/            FLOW case, freestream inlet + k-omega SST (fallback)
+    dispersionCase/           DISPERSION case: 0/T system/ constant/triSurface/ geo/
+    round/                    uploaded ABL template (reference only)
+    results/                  per-run receptor tables + fields (regenerable)
 ```
 
-Regenerable (safe to delete): `processor*/`, `postProcessing/`, `results/`,
-`constant/polyMesh/sets/`, time directories.
+Regenerable (safe to delete): `processor*/`, `postProcessing/`, `cases/results/`,
+`constant/polyMesh/`, time directories.
 
 ---
 

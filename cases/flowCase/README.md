@@ -11,7 +11,7 @@ reuses. Coordinates are the **recentred frame** (see `../../README.md` §3 and
 Hargreaves & Wright). A `potentialFoam` step initialises `U`/`p`.
 
 ## Mesh
-Built by `../../runallgeo.sh` (SLURM): `surfaceFeatureExtract → blockMesh (m4
+Built by `runallgeo.sh` (SLURM): `surfaceFeatureExtract → blockMesh (m4
 cylinder) → snappyHexMesh -parallel → reconstructParMesh → checkMesh`. The live mesh
 exposes **4 patches**: `inletOutlet` (all-round cylinder side), `top` (symmetry),
 `Terrain`, `Buildings` (walls). The blockMesh `bottom` floor is carved away below the
@@ -33,7 +33,7 @@ Needs `libs (atmosphericModels);` in `controlDict`.
 
 The profile is set in `0/include/ABLConditions` (`Uref`, `Zref`, `angle`, `z0`). The
 hourly wind is the only per-run change:
-`python3 ../../tools/set_wind.py --case . --hour H` writes `Uref=|(u,v)|`,
+`python3 ../tools/set_wind.py --case . --hour H` writes `Uref=|(u,v)|`,
 `angle=atan2(v,u)`.
 
 ## Solver robustness — two-stage schemes
@@ -71,7 +71,7 @@ job_flow.sh                two-stage flow job (SLURM, 128 ranks)
 
 ## Run
 ```bash
-sbatch ../../runallgeo.sh      # mesh once
+sbatch runallgeo.sh      # mesh once
 sbatch job_flow.sh             # potentialFoam + simpleFoam (1st->2nd order)
 ```
 Output: a converged time directory with frozen `U`, `phi`, `nut` → consumed by

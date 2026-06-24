@@ -19,7 +19,7 @@ Usage:
 import argparse, csv, math, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_CASE = os.path.join(os.path.dirname(HERE), "cases", "flowCase")
+DEFAULT_CASE = os.path.join(os.path.dirname(HERE), "flowCase")
 
 
 def load_wind(csv_path):

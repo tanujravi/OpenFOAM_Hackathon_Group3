@@ -13,7 +13,7 @@ import json, os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-GEO  = os.path.join(ROOT, "initialCase", "geo")
+GEO  = os.path.join(ROOT, "flowCase", "geo")
 ROI  = os.path.join(GEO, "ROI.obj")
 TRANSFORM = os.path.join(GEO, "transform.json")
 OUTDIR = os.path.join(ROOT, "dispersionCase", "constant", "triSurface")
