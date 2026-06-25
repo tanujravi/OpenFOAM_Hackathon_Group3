@@ -354,7 +354,6 @@ parallel on 96 ranks via SLURM.
 - `createPatch`/field handling for `streets` on the real mesh is the one step not yet
   validated on the cluster; if `scalarTransportFoam` complains about `streets` on
   `U`/`phi`/`nut`, a one-line `zeroGradient` entry fixes it.
-
 - Flow must start 1st-order then restart 2nd-order (`job_flow.sh`); fully 2nd-order
   from a cold start diverges (k/epsilon blow-up -> GAMG SIGFPE). ABL BCs need
   `libs (atmosphericModels)` in both flow and dispersion `controlDict`.

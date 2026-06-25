@@ -1,0 +1,32 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  scalarTransportFoam dispersion -- TRANSIENT day. start/end/deltaT are set per
+  hourly SEGMENT by run_transient_day.sh (foamDictionary); the carrier U + the
+  streets gradient are refreshed each hour, the T field is carried over.
+\*---------------------------------------------------------------------------*/
+FoamFile { version 2.0; format ascii; class dictionary; object controlDict; }
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+libs            (atmosphericModels);   // frozen nut carries atmNutkWallFunction
+
+application     scalarTransportFoam;
+
+startFrom       startTime;             // script sets startTime = h*3600
+startTime       0;
+stopAt          endTime;
+endTime         3600;                  // script sets endTime = (h+1)*3600
+deltaT          2;                     // script may override (config: trans_deltaT)
+
+writeControl    runTime;
+writeInterval   3600;                  // one write per simulated hour
+purgeWrite      0;                     // keep every hour (carryover + time series)
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable true;
+
+functions
+{
+    #include "receptors"               // areaAverage(T) at the 4 ROI surfaces
+}
+// ************************************************************************* //

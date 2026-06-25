@@ -1,0 +1,79 @@
+// Receptor air-quality sampling: area-averaged concentration T on each of the
+// four ROI surfaces (kg/m^3; x1e9 -> ug/m^3). Included by controlDict functions{}.
+// Runs during scalarTransportFoam; writes
+//   postProcessing/<receptorN>/<t>/surfaceFieldValue.dat
+//
+// Dict keys stay receptor1..4 (run_single_hour.sh / receptor_table.py read
+// postProcessing/<key>); the 'name' is the human-readable site (ASCII slug).
+//   receptor1 = Hospital da Senhora da Oliveira (Public Hospital)
+//   receptor2 = Escola Secundaria Francisco de Holanda
+//   receptor3 = Escola Secundaria Martins Sarmento
+//   receptor4 = Escola Basica/Secundaria de Santos Simoes
+//
+// NOTE: no shared $_template here -- a template sub-dict inside functions{} is
+// itself constructed as a function object (and fails: "Entry 'name' not found").
+// The four blocks are therefore written out in full.
+
+receptor1
+{
+    type            surfaceFieldValue;
+    libs            (fieldFunctionObjects sampling);
+    name            Hospital;
+    fields          (T);
+    operation       areaAverage;
+    regionType      sampledSurface;
+    surfaceFormat   none;
+    writeFields     false;
+    writeControl    timeStep;
+    writeInterval   100;
+    log             true;
+    sampledSurfaceDict { type sampledTriSurfaceMesh; surface receptor1.obj; source cells; interpolate true; }
+}
+
+receptor2
+{
+    type            surfaceFieldValue;
+    libs            (fieldFunctionObjects sampling);
+    name            FranciscoHolanda;
+    fields          (T);
+    operation       areaAverage;
+    regionType      sampledSurface;
+    surfaceFormat   none;
+    writeFields     false;
+    writeControl    timeStep;
+    writeInterval   100;
+    log             true;
+    sampledSurfaceDict { type sampledTriSurfaceMesh; surface receptor2.obj; source cells; interpolate true; }
+}
+
+receptor3
+{
+    type            surfaceFieldValue;
+    libs            (fieldFunctionObjects sampling);
+    name            MartinsSarmento;
+    fields          (T);
+    operation       areaAverage;
+    regionType      sampledSurface;
+    surfaceFormat   none;
+    writeFields     false;
+    writeControl    timeStep;
+    writeInterval   100;
+    log             true;
+    sampledSurfaceDict { type sampledTriSurfaceMesh; surface receptor3.obj; source cells; interpolate true; }
+}
+
+receptor4
+{
+    type            surfaceFieldValue;
+    libs            (fieldFunctionObjects sampling);
+    name            SantosSimoes;
+    fields          (T);
+    operation       areaAverage;
+    regionType      sampledSurface;
+    surfaceFormat   none;
+    writeFields     false;
+    writeControl    timeStep;
+    writeInterval   100;
+    log             true;
+    sampledSurfaceDict { type sampledTriSurfaceMesh; surface receptor4.obj; source cells; interpolate true; }
+}

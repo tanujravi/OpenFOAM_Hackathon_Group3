@@ -1,0 +1,23 @@
+/*--- ABL inflow parameters (neutral, Richards & Hoxey / Hargreaves-Wright) ---*/
+Uref                 2.275445;     // reference wind speed [m/s]   <-- HOURLY (set_wind)
+Zref                 10.0;      // reference height [m]
+angle                -37.4505;    // wind dir, deg: flowDir=(cos,sin)  <-- HOURLY (set_wind)
+zDir                 (0 0 1);   // vertical
+z0                   uniform 0.25;   // terrain aerodynamic roughness [m]
+d                    uniform 0.0;    // displacement height
+z0_                  0.25;      // must equal z0 above (scalar form)
+kappa                0.41;
+Cmu                  0.09;
+E                    9.8;
+pressure             0;         // reference (gauge) pressure
+
+// ---- derived (do not edit) ----
+angleRad             #calc "degToRad($angle)";
+comp1                #calc "cos($angleRad)";
+comp2                #calc "sin($angleRad)";
+flowDir              ($comp1 $comp2 0);
+uStar                #calc "( $Uref * $kappa ) / log(( $Zref + $z0_ )/ $z0_ )";
+kInlet               #calc "( $uStar * $uStar ) / sqrt( $Cmu )";
+epsilonInlet         #calc "pow($uStar,3) / ( $kappa * ( $Zref + $z0_ ))";
+Uvector              (#calc "$Uref*$comp1" #calc "$Uref*$comp2" 0);
+// ************************************************************************* //

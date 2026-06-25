@@ -1,0 +1,33 @@
+{
+  "description": "Pure translation; recentred frame for the big 25km city4CFD domain.",
+  "origin_utm": {
+    "X0": -13152.616681,
+    "Y0": 197434.737589,
+    "Z0": 74.289965
+  },
+  "offset_applied": {
+    "dx": 13152.616681,
+    "dy": -197434.737589,
+    "dz": -74.289965
+  },
+  "to_recentred": "X' = X + dx ; Y' = Y + dy ; Z' = Z + dz",
+  "to_utm_inverse": "X = X' - dx ; Y = Y' - dy ; Z = Z' - dz",
+  "inputs": {
+    "terrain": "bigger_terrain_results/city4CFD/Mesh_Terrain.obj",
+    "buildings": [
+      "bigger_terrain_results/city4CFD/Mesh_Buildings_0.obj",
+      "bigger_terrain_results/city4CFD/Mesh_Buildings_1.obj",
+      "bigger_terrain_results/city4CFD/Mesh_Buildings_2.obj",
+      "bigger_terrain_results/city4CFD/Mesh_Buildings_3.obj",
+      "bigger_terrain_results/city4CFD/Mesh_Buildings_4.obj",
+      "bigger_terrain_results/city4CFD/Mesh_Buildings_5.obj",
+      "bigger_terrain_results/city4CFD/Mesh_Buildings_6.obj"
+    ],
+    "roi": "bigger_terrain_results/ROI/ROI.obj",
+    "roads": "bigger_terrain_results/roads/snapped_road_segments.csv"
+  },
+  "invariant": [
+    "wind u,v vectors",
+    "emission factors"
+  ]
+}

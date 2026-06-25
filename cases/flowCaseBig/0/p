@@ -1,0 +1,18 @@
+FoamFile { version 2.0; format ascii; class volScalarField; object p; }
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+#include "include/ABLConditions"
+dimensions      [0 2 -2 0 0 0 0];
+internalField   uniform 0;
+boundaryField
+{
+    inletOutlet
+    {
+        type            freestreamPressure;
+        freestreamValue uniform $pressure;
+        value           uniform $pressure;
+    }
+    top                  { type symmetry; }
+    Buildings { type zeroGradient; } 
+    Terrain { type zeroGradient; }
+}
+// ************************************************************************* //

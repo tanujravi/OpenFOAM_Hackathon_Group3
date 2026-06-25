@@ -1,0 +1,37 @@
+# ===========================================================================
+#  config.yaml -- 24-hour quasi-steady mobility-scenario sweep (Snakemake)
+# ===========================================================================
+#  Paths are relative to cases/workflow/ (where you run `snakemake`).
+#  The sweep reuses ONE mesh (carved once) and, per hour, ONE frozen flow
+#  field that is shared across all scenarios + pollutants -- so comparisons
+#  are fair (only the emission scaling changes between scenarios).
+# ---------------------------------------------------------------------------
+
+flow_case:   "../flowCase"          # simpleFoam ABL case (holds the mesh)
+disp_case:   "../dispersionCase"    # scalarTransportFoam case (0/T, receptors)
+tools:       "../tools"             # set_wind / set_emissions / aggregate_day ...
+work_dir:    "runs"                 # per-hour flow + per-(h,scn,pol) disp live here
+results_dir: "results"             # aggregated daily tables
+
+# Interpreter Snakemake's non-interactive shell uses for the python tools.
+# MUST be an ABSOLUTE path to a python with numpy (conda activate/aliases do
+# NOT apply in Snakemake's shell). On the cluster set this to the output of,
+# in the env where `python3 -c "import numpy"` works:
+#     python3 -c "import sys; print(sys.executable)"
+python_bin: "/usr/bin/python3"
+
+# Sweep dimensions ----------------------------------------------------------
+hours:      [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
+scenarios:  [reference, S1, S2, S3]
+pollutants: [CO, NOx]
+
+# Solver / run knobs --------------------------------------------------------
+nprocs:            128       # MPI ranks for the parallel solves (srun -n)
+DT:                1.0       # passive-scalar diffusivity [m^2/s]
+halfwidth:         28.0      # street-carve half-width [m] (one-time carve)
+flow_2ndorder_iters: 2000    # extra iters for the 2nd-order restart
+parallel:          true      # srun -parallel solves (false -> serial, for tiny tests)
+
+# Transient strategy only (Snakefile.transient) --------------------------------
+trans_deltaT:     2.0       # transient time step [s] (CFL-limited; tune per mesh)
+seconds_per_hour: 3600      # real seconds advanced per hourly segment

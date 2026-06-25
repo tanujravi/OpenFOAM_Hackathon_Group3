@@ -1,0 +1,86 @@
+[
+  {
+    "id": "receptor1",
+    "n_faces": 1700,
+    "n_verts": 850,
+    "centroid_recentred": [
+      -1266.91,
+      -418.49,
+      117.64
+    ],
+    "centroid_utm": [
+      -14419.53,
+      197016.25,
+      191.93
+    ],
+    "site_name": "Hospital da Senhora da Oliveira (Public Hospital)",
+    "site_slug": "Hospital",
+    "latlon": [
+      41.44246,
+      -8.30559
+    ]
+  },
+  {
+    "id": "receptor2",
+    "n_faces": 912,
+    "n_verts": 458,
+    "centroid_recentred": [
+      273.47,
+      -94.6,
+      136.49
+    ],
+    "centroid_utm": [
+      -12879.15,
+      197340.14,
+      210.78
+    ],
+    "site_name": "Escola Secundaria Francisco de Holanda",
+    "site_slug": "FranciscoHolanda",
+    "latlon": [
+      41.44526,
+      -8.28723
+    ]
+  },
+  {
+    "id": "receptor3",
+    "n_faces": 852,
+    "n_verts": 426,
+    "centroid_recentred": [
+      -533.47,
+      -143.16,
+      120.71
+    ],
+    "centroid_utm": [
+      -13686.08,
+      197291.58,
+      195.0
+    ],
+    "site_name": "Escola Secundaria Martins Sarmento",
+    "site_slug": "MartinsSarmento",
+    "latlon": [
+      41.44483,
+      -8.29688
+    ]
+  },
+  {
+    "id": "receptor4",
+    "n_faces": 776,
+    "n_verts": 390,
+    "centroid_recentred": [
+      1555.0,
+      627.48,
+      192.17
+    ],
+    "centroid_utm": [
+      -11597.61,
+      198062.22,
+      266.46
+    ],
+    "site_name": "Escola Basica/Secundaria de Santos Simoes",
+    "site_slug": "SantosSimoes",
+    "latlon": [
+      41.45186,
+      -8.27185
+    ]
+  }
+]

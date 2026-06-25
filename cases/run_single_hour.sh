@@ -33,7 +33,7 @@ echo "[run_single_hour] ROOT=$ROOT"
 [ -d "./flowCase" ] || { echo "ERROR: flowCase not under ROOT=$ROOT. Submit from the repo root (sbatch run_single_hour.sh)."; exit 1; }
 HOUR=${HOUR:-1}; SCENARIO=${SCENARIO:-reference}; POLLUTANTS=${POLLUTANTS:-"CO NOx"}
 HALFWIDTH=${HALFWIDTH:-28.0}; NPROCS=${NPROCS:-128}; DT=${DT:-1.0}
-FLOW=./flowCase; DISP=./dispersionCase; TOOLS=./tools
+FLOW=${FLOW:-./flowCase}; DISP=${DISP:-./dispersionCase}; TOOLS=${TOOLS:-./tools}
 RESULTS="./results/h${HOUR}_${SCENARIO}"; 
 mkdir -p "$RESULTS" logs
 log(){ echo "[$(date +%H:%M:%S)] $*"; }
