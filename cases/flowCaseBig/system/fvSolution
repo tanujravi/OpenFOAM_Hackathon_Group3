@@ -63,12 +63,12 @@ SIMPLE
     consistent               no;
     residualControl
     {
-        p               1e-6;
-        U               1e-6;
-        "(k|omega|epsilon)" 1e-6;
+        p               1e-5;
+        U               1e-5;
+        "(k|omega|epsilon)" 1e-5;
     }
 
-    nNonOrthogonalCorrectors 2; // Changed from 3 to 2
+    nNonOrthogonalCorrectors 1;   // relaxed for speed (re-check after the clean re-mesh)
     pRefCell        0;
     pRefValue       0;
 

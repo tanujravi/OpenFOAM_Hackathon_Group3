@@ -2,8 +2,8 @@
 #SBATCH --job-name=flow
 #SBATCH --account=f202500001hpcvlabepicurex
 #SBATCH --partition=normal-x86
-#SBATCH --nodes=1
-#SBATCH --ntasks=128
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=96   # 96/node (not 128) eases memory-bandwidth contention
 #SBATCH --mem=0                # full node RAM (esp. for the serial decomposePar/reconstructPar/carve steps)
 #SBATCH --time=02:00:00
 #SBATCH --error=flow.err
@@ -15,7 +15,7 @@
 #    Stage B  switch to 2nd-ORDER schemes, restart from latestTime for accuracy
 #  (jumping straight to 2nd order diverges -> k/epsilon blow up -> GAMG SIGFPE.)
 # =============================================================================
-nprocs=128
+nprocs=${SLURM_NTASKS:-384}   # match decomposition to the allocation (4x96)
 module load OpenFOAM/v2512-foss-2025a
 source "$FOAM_INST_DIR/OpenFOAM-v2512/etc/bashrc"
 
@@ -57,7 +57,7 @@ foamDictionary -entry endTime -set $(( latest + 2000 )) system/controlDict
 srun simpleFoam -parallel > log.simpleFoam.2ndorder 2>&1
 echo "=== Stage B (2nd order) done; latestTime = $(foamListTimes -latestTime) ==="
 
-reconstructPar -latestTime
+srun redistributePar -reconstruct -latestTime -parallel > log.reconstruct 2>&1
 
 # restore the 1st-order set as the default active fvSchemes (tidy for re-runs)
 cp system/fvSchemes_1storder system/fvSc

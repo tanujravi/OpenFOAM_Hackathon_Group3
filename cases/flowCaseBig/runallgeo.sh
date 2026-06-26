@@ -2,10 +2,10 @@
 #SBATCH --job-name=round
 #SBATCH --account=f202500001hpcvlabepicurex
 #SBATCH --partition=normal-x86
-#SBATCH --nodes=4              # more nodes, FEWER ranks/node => more RAM per rank (snappy OOM fix)
-#SBATCH --ntasks-per-node=12   # 12/node ~2.5GB/rank on a 32GB node; raise nodes (not this) for speed
+#SBATCH --nodes=1              
+#SBATCH --ntasks-per-node=128   
 #SBATCH --mem=0                # request ALL memory on each node (else SLURM caps at mem-per-cpu*ntasks)
-#SBATCH --time=03:00:00        # fewer ranks total -> slower meshing
+#SBATCH --time=02:00:00        # fewer ranks total -> slower meshing
 #SBATCH --error=round.err
 #SBATCH --output=round.out
 # Source OpenFOAM (Define the bashrc of your local openfoam location)
@@ -16,7 +16,7 @@ source "$FOAM_INST_DIR/OpenFOAM-v2512/etc/bashrc"
 # SnappyHex in parallel? ( 1 = Yes, 0 = No )
 snapPar=1
 # Ensure nprocs is defined to the correct number
-nprocs=${SLURM_NTASKS:-96}   # match numberOfSubdomains to the actual allocation
+nprocs=${SLURM_NTASKS:-128}   # match numberOfSubdomains to the actual allocation
 # Surfaces to mesh (recentred frame). Guimaraes small domain: buildings + terrain
 # only. No water surface is provided; canopy is a porous zone, not a meshed wall.
 outMesh1="geo/Mesh_Buildings.obj"
@@ -50,16 +50,16 @@ if [ $snapPar ]; then
 	# Generate the snappyHexMesh
 	echo "To follow the progress for snappyHexMesh, read logs/snappyHex.log....."
 	#snappyHexMesh -overwrite > logs/snappyHex.log
-	srun snappyHexMesh -parallel > logs/snappyHex.log 2>&1
+	srun snappyHexMesh -overwrite -parallel > logs/snappyHex.log 2>&1
 	echo "Done with snappyHexMesh......"
 	# Reconstruct the mesh
 	echo "Reconstructing the mesh......"
-	reconstructParMesh -constant > logs/reconstructSnappyMesh.log 2>&1
+	srun redistributePar -reconstruct -constant -parallel > logs/reconstruct.log 2>&1
 	echo "Copy the mesh to savedMesh folder....."
-	rsync -r 1 2 savedMesh/
+	rsync -r constant/polyMesh savedMesh/ 2>/dev/null || true
 	# Run check mesh for sanity
 	echo "Running checkmesh utility......."
-	srun checkMesh -latestTime -parallel > logs/checkMesh.log 2>&1
+	srun checkMesh -parallel > logs/checkMesh.log 2>&1
 else
 	echo "Snappy Hex Mesh runs in serial......"
 	# Generate the snappyHexMesh

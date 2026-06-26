@@ -126,6 +126,43 @@ def transform_roads(in_csv, out_csv, off):
     return n
 
 
+def clean_merged(path, group):
+    """Dedup + de-degenerate a merged OBJ (fixes 'illegal triangles' from overlapping
+    source files that make snappyHexMesh create negative-volume cells). Needs trimesh;
+    skips with a warning if it's unavailable -- run tools/clean_surface.py manually then."""
+    try:
+        import trimesh
+    except Exception:
+        print("[clean] trimesh unavailable -> skipped dedup; run tools/clean_surface.py on", path)
+        return
+    m = trimesh.load(path, force="mesh", process=True, maintain_order=False)
+    nf0 = len(m.faces)
+    for step in ("merge_vertices", "remove_unreferenced_vertices"):
+        try: getattr(m, step)()
+        except Exception: pass
+    try: m.update_faces(m.unique_faces())
+    except Exception:
+        if hasattr(m, "remove_duplicate_faces"):
+            try: m.remove_duplicate_faces()
+            except Exception: pass
+    try: m.update_faces(m.nondegenerate_faces())
+    except Exception:
+        if hasattr(m, "remove_degenerate_faces"):
+            try: m.remove_degenerate_faces()
+            except Exception: pass
+    try: m.remove_unreferenced_vertices()
+    except Exception: pass
+    V, F = m.vertices, m.faces
+    with open(path, "w") as f:
+        f.write("# merged + recentred + cleaned (dedup/de-degenerate)\n")
+        f.write("g %s\no %s\n" % (group, group))
+        for v in V:
+            f.write("v %.6f %.6f %.6f\n" % (v[0], v[1], v[2]))
+        for t in F:
+            f.write("f %d %d %d\n" % (t[0] + 1, t[1] + 1, t[2] + 1))
+    print("[clean] %s: faces %d -> %d (removed %d)" % (os.path.basename(path), nf0, len(F), nf0 - len(F)))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--terrain", default=os.path.join(ROOT, "terrain_and_buildings", "Mesh_Terrain.obj"))
@@ -155,6 +192,7 @@ def main():
 
     vt, nf = merge_objs(bfiles, os.path.join(GEO, "Mesh_Buildings.obj"), off, "Buildings")
     print(f"[buildings] {len(bfiles)} files, {vt} verts, {nf} faces -> {GEO}/Mesh_Buildings.obj")
+    clean_merged(os.path.join(GEO, "Mesh_Buildings.obj"), "Buildings")
 
     nv = transform_single(args.roi, os.path.join(GEO, "ROI.obj"), off, "ROI")
     print(f"[roi]       {nv} verts -> {GEO}/ROI.obj  bbox {tuple(round(x,1) for x in bbox_of(os.path.join(GEO,'ROI.obj')))}")

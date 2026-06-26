@@ -22,6 +22,17 @@ small-domain READMEs are unchanged.
   Santos Simões), so results are directly comparable to the small domain.
 - The carved `streets` mesh + frozen `U/phi/nut` come from `../flowCaseBig`
   (which carves `streets` into its own mesh before the flow solve).
+- `0/T` has a **`bottom`** entry (`zeroGradient`): unlike the small domain, the big
+  mesh keeps the floor patch (the cylinder reaches past the terrain at a few far
+  edges), so every field — including `T` — needs a `bottom` BC. No flux through it.
+
+## Big-mesh handoff (avoid serial reconstruct)
+For the 40 M-cell mesh, reconstructing/​re-decomposing the whole mesh is slow and
+OOM-prone. Keep flow + dispersion on the **same decomposition** so the dispersion
+reuses the flow's already-decomposed frozen `U/phi/nut` directly, and let the
+receptor `surfaceFieldValue` function objects produce the numbers **in parallel** —
+so the volume `T` never has to be reconstructed (only reconstruct it, via
+`redistributePar -reconstruct`, if you want the full field for ParaView).
 
 ## Run (single hour, big domain)
 Prereq: `../flowCaseBig` is meshed (`runallgeo.sh`) and solved for the hour

@@ -1,71 +1,98 @@
 # flowCaseBig — wind precursor on the BIG (25 km city4CFD) domain
 
-Same workflow as `../flowCase`, on the larger **25.2 × 25.2 km** city4CFD terrain
-(`bigger_terrain_results/`). Built to study how the larger domain / boundary
-distance changes the receptor results. **Recentred frame** (same X/Y origin as the
-small domain; Z0 = big-terrain min = 74.29 m). Vegetation is **not** meshed.
+Same pipeline as `../flowCase`, on the larger **25.2 × 25.2 km** city4CFD terrain
+(`bigger_terrain_results/`), to study how domain size / boundary distance changes the
+receptor results. **Recentred frame** (same X/Y origin as the small domain; Z0 =
+big-terrain min = 74.29 m). Vegetation is **not** meshed.
 
-## What differs from the small case (only geometry + mesh sizing)
+The 196 roads and 4 receptors are the **same** as the small domain (same CRS), so
+emission mapping and receptor sampling are identical; `../dispersionCaseBig`'s
+`receptors.json` maps to the same four sites (Hospital, Francisco de Holanda,
+Martins Sarmento, Santos Simões).
+
+## What differs from the small case
 - `geo/` recentred from `bigger_terrain_results/city4CFD` (terrain + buildings 0–6)
-  via `../tools/preprocess_geometry.py` (see `geo/transform.json`).
+  by `../tools/preprocess_geometry.py` (see `geo/transform.json`).
+- **Building surface is auto-cleaned.** Merging buildings 0–6 left **1247 duplicate /
+  degenerate triangles** (`surfaceCheck`), which made snappy produce negative-volume
+  cells. `preprocess_geometry.py` now dedups/de-degenerates the merged OBJ (via
+  `../tools/clean_surface.py` logic); terrain was already clean.
 - `system/blockMeshDict.m4`: `H=524`, inner square `s=1800` (covers the ROI),
-  cylinder `Rcity=12500` m (terrain half-extent is 12600 m; the cylinder inscribes
-  the square — top ≈ 2086 m, floor −10 m).
-- `system/snappyHexMeshDict`: **far-field terrain coarse** (`Terrain` surface level
-  `(2 2)`), but **fine detail at the ROI** — `box1` region level **4** (streets +
-  terrain near the roads), `box2` level 3, **buildings level 5** (+ feature edges,
-  + distance refinement). The small case's global terrain-level-4 / terrain-distance
-  rules were removed (they explode over 25 km).
-- Reused unchanged: `0/` ABL BCs, `system/{fvSchemes*,fvSolution,controlDict,
-  decomposeParDict}`, `runallgeo.sh`, `job_flow.sh`, and the emission CSVs + wind.
-
-The 196 roads and the 4 receptors are the **same** as the small domain (same CRS),
-so emission mapping and receptor sampling work identically;
-`../dispersionCaseBig/constant/triSurface/receptors.json` is mapped to the same
-four sites (Hospital, Francisco de Holanda, Martins Sarmento, Santos Simões).
+  cylinder `Rcity=12500` m, **floor `z0=-150`** (see "bottom patch" below), top ≈ 1946 m.
+- `system/snappyHexMeshDict`: **far-field terrain coarse**, **fine at the ROI** — see
+  the table below. `locationInMesh (123.4 57.3 600)` (off the symmetry planes / grid
+  lines, in the air).
+- Reused: `0/` ABL BCs (+ a new `bottom` entry), the emission CSVs + wind, and the
+  tools.
 
 ## Mesh resolution (buildings + streets)
-
-Background cell in the inner block is `2*s/Ns0 = 3600/24 = 150 m` (vert ~175 m);
-snappy halves it at each refinement level:
+Background inner-block cell = `2*s/Ns0 = 3600/24 = 150 m` (vert ~175 m); snappy halves
+it per refinement level:
 
 | region | level | cell size |
 |---|---|---|
 | far-field terrain | 2 | ~37.5 m |
-| transition (box2) | 3 | ~18.8 m |
-| **streets / terrain at the ROI** (box1) | 4 | **~9.4 m** |
-| **buildings** (surface + feature edges) | 5 | **~4.7 m** (vert ~5.5 m) |
+| transition (box2) | 4 | ~9.4 m |
+| **streets / ROI terrain** (box1) | 5 | **~4.7 m** (2–3 cells per road) |
+| **buildings** (surface + feature edges) | 6 | **~2.3 m** (facade scale) |
 
-- **Buildings ~4.7 m** — resolves individual building massing and (via the level-5
-  feature edges) keeps corners/outlines crisp; matches the small-domain case (~4.2 m).
-- **Streets ~9.4 m** — about **1 cell across** a typical 10-14 m road: enough to lift
-  the emission off the street into the air (which sets the receptor concentrations),
-  but not to resolve cross-street / street-canyon gradients. For 2-3 cells per road
-  (~4.7 m), raise `box1` to level 5 (~8x the cells inside that box); push buildings to
-  level 6 (~2.3 m) for facade-scale detail. Do a castellated-only preview first to
-  check the total cell count.
+Far terrain is deliberately coarse (it only shapes the approach flow); the detail is
+concentrated in the ROI box + on the buildings. Expect **~30–45 M cells** (well above
+the small case's ~1.7 M). To trade detail for cells: `box1` 5→4 (streets ~9.4 m) or
+buildings 6→5 (~4.7 m). Always do a **castellated-only preview** (`snap false`) to read
+the cell count before the full snap + solve.
 
-## Run a single hour on the big domain
+## The `bottom` patch is KEPT here (not carved away)
+On the small domain the flat floor patch `bottom` is carved away by snappy. On the big
+domain the cylinder (r=12500) reaches just past the terrain's real coverage at a few
+far edges, so `bottom` is a **genuine** lower boundary there and survives even with
+`z0=-150`. It is therefore given a BC rather than fought:
+`U` slip · `p`,`k`,`epsilon`,`omega` zeroGradient · `nut` calculated 0 · `T` (dispersion)
+zeroGradient. It's a flat floor ~10 km from the receptors, so `slip` keeps it inert (no
+spurious ground boundary layer).
+
+## Meshing on the ARM nodes (memory-tight: ~30 GB / 48 cores)
+`runallgeo.sh` is tuned for these nodes:
+- `--mem=0` (grab all node RAM — without it SLURM caps at `DefMemPerCPU × ntasks`),
+  and **few ranks/node** (`--ntasks-per-node=12`): each rank holds the full
+  building+terrain search trees, so packing 48/node OOMs. Budget ~8–10 M cells per node;
+  a ~40 M mesh wants ~6–8 nodes. `scotch` decomposition balances cells/rank.
+- **No serial mesh reconstruct.** snappy runs `-overwrite` (final mesh → decomposed
+  `constant/polyMesh`) and `srun redistributePar -reconstruct -constant -parallel`
+  gathers it in parallel (the serial `reconstructParMesh` OOMs on 40 M).
+
+## Flow solve (`job_flow.sh`, runs on x86)
+- **4 nodes × 96 ranks** (`--mem=0`): `simpleFoam` is memory-bandwidth-bound, so spread
+  the ranks — 128 on one node saturates bandwidth (~8 s/iter); 4×96 → ~1–1.5 s/iter.
+- `fvSolution`: `residualControl 1e-5`, `nNonOrthogonalCorrectors 1` (re-check max
+  non-orthogonality after the clean re-mesh; bump to 2 if it's still high).
+- Flow fields reconstructed in parallel: `srun redistributePar -reconstruct -latestTime -parallel`.
+- Two-stage schemes (1st-order warm-up → 2nd-order restart) as in the small case.
+
+## Run a single hour
 ```bash
-# 1. mesh once (cluster; minutes->~1 h is fine):
-cd cases/flowCaseBig && sbatch runallgeo.sh
-#    sanity-check the cell count BEFORE the long solve:
-#    grep -iE "cells|Total" logs/snappyHex.log ; checkMesh -latestTime
+# 0. geometry: preprocess_geometry.py already recentres + cleans the buildings.
+#    (or clean an existing OBJ:  python3 ../tools/clean_surface.py --in geo/Mesh_Buildings.obj \
+#       --out geo/Mesh_Buildings.obj --group Buildings ; surfaceCheck geo/Mesh_Buildings.obj)
+
+# 1. mesh once (ARM; --mem=0, ~12 ranks/node). Preview the count first if unsure:
+#    foamDictionary -entry snap -set false system/snappyHexMeshDict ; sbatch runallgeo.sh ...
+sbatch runallgeo.sh
+#    CONFIRM the mesh is clean before solving:
+srun checkMesh -parallel 2>/dev/null | grep -iE 'negative|orientation|aspect|non-ortho'
 
 # 2. set this hour's wind:
 python3 ../tools/set_wind.py --case . --hour 8
 
-# 3. flow precursor (carves the 'streets' patch, then 2-stage simpleFoam):
+# 3. flow precursor (carve streets + 2-stage simpleFoam; 4 nodes x 96):
 sbatch job_flow.sh
 
-# 4. dispersion + receptor table — run the driver from cases/, pointed here:
+# 4. dispersion + receptor table (driver from cases/, pointed at the big cases):
 cd ..
 HOUR=8 SCENARIO=reference FLOW=./flowCaseBig DISP=./dispersionCaseBig sbatch run_single_hour.sh
 ```
 
-> Cell count: far field is coarse but the ROI is level 4–5 over a much larger
-> domain, so expect well above the small case's ~1.7 M cells. Do a castellated-only
-> test first (or read `logs/snappyHex.log`) and adjust `box1`/buildings levels or
-> `Rcity` if it overshoots your node budget.
-> Regenerable: `geo/Mesh_*.obj` (rebuild with `preprocess_geometry.py`),
+> Visualise the mesh without reconstructing: `../postpro/pv_mesh_inspect.py` (reads the
+> decomposed case, colours surfaces/slices by `cellLevel`).
+> Regenerable: `geo/Mesh_*.obj` (rebuild via `preprocess_geometry.py`),
 > `constant/polyMesh/`, `processor*/`, logs.
