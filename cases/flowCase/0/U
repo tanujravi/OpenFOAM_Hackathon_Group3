@@ -13,6 +13,7 @@ boundaryField
         value            uniform $Uvector;
     }
     top                  { type symmetry; }
-    "(Buildings|Terrain)" { type noSlip; }
+    Buildings { type noSlip; }
+    Terrain { type noSlip; }
 }
 // ************************************************************************* //

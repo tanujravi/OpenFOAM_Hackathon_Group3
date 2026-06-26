@@ -21,6 +21,25 @@ source "$FOAM_INST_DIR/OpenFOAM-v2512/etc/bashrc"
 # match decomposition to the rank count
 sed -i "s/numberOfSubdomains [0-9]\+;/numberOfSubdomains ${nprocs};/g" system/decomposeParDict
 
+# --- one-time: carve the 'streets' patch into THIS (flow) mesh, BEFORE solving.
+#     This splits Terrain -> Terrain + streets so every field is written on the
+#     final mesh; the dispersion case then reuses this mesh + fields with matching
+#     face counts (no post-solve createPatch, which would desync field sizes).
+HALFWIDTH=${HALFWIDTH:-6.0}
+if ! grep -qE "^[[:space:]]*streets$" constant/polyMesh/boundary 2>/dev/null; then
+  echo "=== carving 'streets' patch into the flow mesh (one-time) ==="
+  if head -c 4000 constant/polyMesh/points | grep -qi "format[[:space:]]*binary"; then
+    foamFormatConvert -constant > log.formatConvert 2>&1 || true   # carver needs ASCII mesh
+  fi
+  python3 ../tools/make_street_patches.py --case .           --roads geo/snapped_road_segments_recentred.csv --half-width "$HALFWIDTH" > log.carve 2>&1
+  createPatch -overwrite > log.createPatch 2>&1
+  # createPatch does not propagate the new patch into the 0/ fields -> clone Terrain
+  python3 ../tools/add_streets_bc.py --case . --fields U p k epsilon nut omega > log.addStreetsBC 2>&1
+  echo "=== streets carved; Terrain split, uniform 0/ fields updated ==="
+else
+  echo "=== 'streets' patch already present in mesh; skipping carve ==="
+fi
+
 decomposePar -force
 
 # ----------------------------- Stage A: 1st order ----------------------------
@@ -40,4 +59,4 @@ echo "=== Stage B (2nd order) done; latestTime = $(foamListTimes -latestTime) ==
 reconstructPar -latestTime
 
 # restore the 1st-order set as the default active fvSchemes (tidy for re-runs)
-cp system/fvSchemes_1storder system/fvSchemes
+cp system/fvSchemes_1storder system/fvSc

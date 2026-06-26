@@ -11,7 +11,7 @@ reuses. Coordinates are the **recentred frame** (see `../../README.md` §3 and
 Hargreaves & Wright). A `potentialFoam` step initialises `U`/`p`.
 
 ## Mesh
-Built by `../../runallgeo.sh` (SLURM): `surfaceFeatureExtract → blockMesh (m4
+Built by `runallgeo.sh` (SLURM): `surfaceFeatureExtract → blockMesh (m4
 cylinder) → snappyHexMesh -parallel → reconstructParMesh → checkMesh`. The live mesh
 exposes **4 patches**: `inletOutlet` (all-round cylinder side), `top` (symmetry),
 `Terrain`, `Buildings` (walls). The blockMesh `bottom` floor is carved away below the
@@ -33,7 +33,7 @@ Needs `libs (atmosphericModels);` in `controlDict`.
 
 The profile is set in `0/include/ABLConditions` (`Uref`, `Zref`, `angle`, `z0`). The
 hourly wind is the only per-run change:
-`python3 ../../tools/set_wind.py --case . --hour H` writes `Uref=|(u,v)|`,
+`python3 ../tools/set_wind.py --case . --hour H` writes `Uref=|(u,v)|`,
 `angle=atan2(v,u)`.
 
 ## Solver robustness — two-stage schemes
@@ -43,9 +43,19 @@ GAMG floating-point exception ~iter 10). So:
 - `system/fvSchemes_2ndorder` — `limitedLinear` (accurate), the **restart**.
 - `system/fvSchemes` — currently = the 1st-order set (active default).
 
-`job_flow.sh` runs the full recipe: `decomposePar → potentialFoam → simpleFoam`
-(1st-order) → swap to 2nd-order, bump `endTime`, restart from `latestTime` →
-`reconstructPar`.
+`job_flow.sh` runs the full recipe: **carve the `streets` patch (one-time, before
+solving)** → `decomposePar → potentialFoam → simpleFoam` (1st-order) → swap to
+2nd-order, bump `endTime`, restart from `latestTime` → `reconstructPar`.
+
+## Street patch carved here (before the solve)
+`job_flow.sh` first carves `streets` out of `Terrain` (idempotent — skipped if the
+patch already exists): `foamFormatConvert` to ASCII if needed →
+`make_street_patches.py` → `createPatch -overwrite` → `add_streets_bc.py` (clones the
+`Terrain` boundary entry into `streets` for the uniform `0/{U,p,k,epsilon,nut}`).
+Doing this **before** the solve means the frozen fields are written on the final
+`Terrain`+`streets` mesh, so `../dispersionCase` can reuse them with matching face
+counts. (Carving after the solve would shrink `Terrain` and desync the field sizes.)
+This produces `geo/streets_face_segments.csv`, which the dispersion stage reuses.
 
 ## Key files
 ```
@@ -61,7 +71,7 @@ job_flow.sh                two-stage flow job (SLURM, 128 ranks)
 
 ## Run
 ```bash
-sbatch ../../runallgeo.sh      # mesh once
+sbatch runallgeo.sh      # mesh once
 sbatch job_flow.sh             # potentialFoam + simpleFoam (1st->2nd order)
 ```
 Output: a converged time directory with frozen `U`, `phi`, `nut` → consumed by
@@ -70,5 +80,6 @@ Output: a converged time directory with frozen `U`, `phi`, `nut` → consumed by
 > The previous **freestream + k-ω SST** setup is preserved in `../flowCaseOldBC` as a
 > fallback (it stays bounded but its pressure residual plateaus ~0.15).
 >
-> Needs an **ASCII** `polyMesh` for the dispersion carver; if binary, `foamFormatConvert`.
+> The carve needs an **ASCII** `polyMesh`; `job_flow.sh` runs `foamFormatConvert`
+> automatically if the mesh is binary.
 > Regenerable: `processor*/`, time dirs, `constant/polyMesh/` (re-meshable).
