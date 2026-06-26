@@ -99,7 +99,7 @@ castellatedMeshControls
     (
         {
             file "Mesh_Buildings.eMesh";
-            level 5;
+            level 6;
         }
     );
 
@@ -112,7 +112,7 @@ castellatedMeshControls
             {
                 Buildings
                 {
-                    level (5 5);
+                    level (6 6);
                     patchInfo { type wall; }
                 }
             }
@@ -142,19 +142,19 @@ castellatedMeshControls
         box1
         {
             mode inside;
-            levels ((1E15 4));
+            levels ((1E15 5));
         }
 
         box2
         {
             mode inside;
-            levels ((1E15 3));
+            levels ((1E15 4));
         }
 
         Mesh_Buildings
         {
             mode distance;
-            levels ((4.0 5) (12.0 4) (25.0 3));
+            levels ((6.0 6) (15.0 5) (40.0 4));
         }
 
         Mesh_Terrain
@@ -166,7 +166,7 @@ castellatedMeshControls
 
     // Air point: above the highest terrain (470 m), inside the cylinder (r=3000),
     // well below the domain top (~1870 m).
-    locationInMesh (0 0 800);
+    locationInMesh (123.4 57.3 600);
     allowFreeStandingZoneFaces true;
 }
 

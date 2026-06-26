@@ -7,6 +7,7 @@ boundaryField
 {
     inletOutlet  { type calculated; value uniform 0; }
     top          { type symmetry; }
+    bottom      { type calculated; value uniform 0; }
     Terrain
     {
         type            atmNutkWallFunction;

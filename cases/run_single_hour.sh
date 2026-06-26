@@ -4,6 +4,7 @@
 #SBATCH --partition=normal-x86
 #SBATCH --nodes=1
 #SBATCH --ntasks=128
+#SBATCH --mem=0                # full node RAM (esp. for the serial decomposePar/reconstructPar/carve steps)
 #SBATCH --time=02:00:00
 #SBATCH --error=logs/disp.err
 #SBATCH --output=logs/disp.out

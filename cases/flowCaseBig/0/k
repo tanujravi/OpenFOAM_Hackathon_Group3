@@ -13,6 +13,7 @@ boundaryField
         value            uniform $kInlet;
     }
     top                  { type symmetry; }
+    bottom      { type zeroGradient; }
     Buildings { type kqRWallFunction; value uniform $kInlet; }
     Terrain { type kqRWallFunction; value uniform $kInlet; }
 }

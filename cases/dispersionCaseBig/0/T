@@ -34,6 +34,7 @@ boundaryField
     }
 
     top         { type symmetry; }
+    bottom      { type zeroGradient; }
 
     Terrain     { type zeroGradient; }
     Buildings   { type zeroGradient; }

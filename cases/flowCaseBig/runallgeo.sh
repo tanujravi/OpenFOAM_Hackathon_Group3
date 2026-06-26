@@ -2,9 +2,10 @@
 #SBATCH --job-name=round
 #SBATCH --account=f202500001hpcvlabepicurex
 #SBATCH --partition=normal-x86
-#SBATCH --nodes=1
-#SBATCH --ntasks=96
-#SBATCH --time=00:15:00
+#SBATCH --nodes=4              # more nodes, FEWER ranks/node => more RAM per rank (snappy OOM fix)
+#SBATCH --ntasks-per-node=12   # 12/node ~2.5GB/rank on a 32GB node; raise nodes (not this) for speed
+#SBATCH --mem=0                # request ALL memory on each node (else SLURM caps at mem-per-cpu*ntasks)
+#SBATCH --time=03:00:00        # fewer ranks total -> slower meshing
 #SBATCH --error=round.err
 #SBATCH --output=round.out
 # Source OpenFOAM (Define the bashrc of your local openfoam location)
@@ -15,7 +16,7 @@ source "$FOAM_INST_DIR/OpenFOAM-v2512/etc/bashrc"
 # SnappyHex in parallel? ( 1 = Yes, 0 = No )
 snapPar=1
 # Ensure nprocs is defined to the correct number
-nprocs=96
+nprocs=${SLURM_NTASKS:-96}   # match numberOfSubdomains to the actual allocation
 # Surfaces to mesh (recentred frame). Guimaraes small domain: buildings + terrain
 # only. No water surface is provided; canopy is a porous zone, not a meshed wall.
 outMesh1="geo/Mesh_Buildings.obj"

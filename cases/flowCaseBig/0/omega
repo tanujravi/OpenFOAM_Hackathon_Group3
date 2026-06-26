@@ -30,6 +30,7 @@ boundaryField
     }
 
     top         { type symmetry; }
+    bottom      { type zeroGradient; }
 
     Terrain     { type omegaWallFunction; value uniform 0.1; }
     Buildings   { type omegaWallFunction; value uniform 0.1; }

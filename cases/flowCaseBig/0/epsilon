@@ -13,6 +13,7 @@ boundaryField
         value            uniform $epsilonInlet;
     }
     top         { type symmetry; }
+    bottom      { type zeroGradient; }
     Terrain
     {
         type            atmEpsilonWallFunction;

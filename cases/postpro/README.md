@@ -62,3 +62,18 @@ Optional steps (slice, receptor resample, log colour) are wrapped so the script
 keeps going and prints `WARN:` if a ParaView-6.0.1 property name differs — paste the
 WARN back to pin the exact name. ParaView is for the spatial story; the per-receptor
 numbers are in `results/.../receptor_table.csv`.
+
+## Mesh inspection (pv_mesh_inspect.py)
+
+Check a big mesh's refinement without reconstructing it. Reads the **decomposed**
+case (`processor*/`) directly; run it in parallel over the decomposition:
+```bash
+mpirun -np <Nprocs> pvbatch pv_mesh_inspect.py --case ../flowCaseBig --out meshfigs
+pvbatch pv_mesh_inspect.py --case ../flowCaseBig --no-slice --out meshfigs   # surfaces only (light)
+```
+Outputs: `mesh_surfaces.png` (Buildings+streets+Terrain as Surface-With-Edges,
+coloured by `cellLevel` -> see street/building resolution) and
+`mesh_slice_<axis>.png` (a slice showing the box1/box2/far-field refinement
+transitions). Flags: `--reconstructed` (read serial mesh instead), `--patches`,
+`--slice-axis x|y|z` + `--slice-origin X Y Z`, `--no-slice`, `--res`.
+`cellLevel` comes from snappy; if it's missing the surfaces render solid grey.

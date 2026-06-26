@@ -59,8 +59,8 @@ define(H, 524)
 define(x0, 0)
 // Center point in Y cylinder
 define(y0, 0)
-// Domain floor: 10 m BELOW lowest terrain (terrain min = 0) so snappy can carve
-define(z0,-10)
+// Domain floor: 150 m BELOW lowest terrain (terrain min=0). Must exceed ~1 far-field
+define(z0,-150)
 
 // Inner (fine) square half-side -- covers the ROI (~ +/-1600 m)
 define(s, 1800)

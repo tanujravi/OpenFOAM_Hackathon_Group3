@@ -13,6 +13,7 @@ boundaryField
         value            uniform $Uvector;
     }
     top                  { type symmetry; }
+    bottom      { type slip; }
     Buildings { type noSlip; }
     Terrain { type noSlip; }
 }
