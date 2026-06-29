@@ -1,0 +1,61 @@
+# ===========================================================================
+#  Snakefile.podrun -- per-hour FLOW + per-(hour,pollutant) DISPERSION, fully
+#  DECOMPOSED on ARM. Each run is its OWN folder under runs_pod/, sharing the
+#  frozen decomposed mesh by SYMLINK -> runs submit as independent SLURM jobs,
+#  in parallel, no clobbering, no waiting (pending is fine). Produces the
+#  decomposed T_CO/T_NOx snapshots for POD. (POD/PODI training is NOT done here.)
+#
+#  Run (from cases/workflow/): see run_podrun.sh (Snakemake submits one sbatch
+#  per flow/disp job). Hours come from select_hours.py.
+# ===========================================================================
+import os
+configfile: "config_pod.yaml"
+
+MASTER  = os.path.abspath(config["mesh_case"])
+DISPSRC = os.path.abspath(config["disp_case"])
+TOOLS   = os.path.abspath(config["tools"])
+WORK    = os.path.abspath(config["work_dir"])
+RES     = os.path.abspath(config["results_dir"])
+SCRIPTS = os.path.abspath("scripts")
+PY      = config.get("python_bin", "python3")
+NP      = int(config["nprocs"]); DT = config["DT"]; SCEN = config.get("scenario", "reference")
+IT2     = int(config.get("flow_2ndorder_iters", 2000))
+POLL    = list(config["pollutants"])
+
+hf = config.get("hours_file", "selected_hours.txt")
+if os.path.exists(hf):
+    HOURS = [h for h in open(hf).read().strip().replace("HOURS=", "").split(",") if h != ""]
+else:
+    HOURS = [str(h) for h in config.get("hours", [])]
+
+wildcard_constraints:
+    hour = r"\d+", poll = r"[A-Za-z0-9]+"
+
+rule all:
+    input: os.path.join(RES, "snapshots.txt")
+
+rule flow_hour:
+    output: os.path.join(WORK, "flow", "h{hour}", "FLOW_DONE")
+    shell:
+        r'bash "{SCRIPTS}/run_flow_hour_decomp.sh" {wildcards.hour} "{MASTER}" "{TOOLS}" "{WORK}" {NP} {IT2} "{PY}" && touch {output}'
+
+rule disp:
+    input:  os.path.join(WORK, "flow", "h{hour}", "FLOW_DONE")
+    output: os.path.join(WORK, "disp", "h{hour}", "{poll}", "DISP_DONE")
+    shell:
+        r'bash "{SCRIPTS}/run_disp_decomp.sh" {wildcards.hour} {wildcards.poll} "{MASTER}" "{DISPSRC}" "{TOOLS}" "{WORK}" {NP} {DT} {SCEN} "{PY}" && touch {output}'
+
+def all_done(_):
+    return [os.path.join(WORK, "disp", "h%s" % h, p, "DISP_DONE") for h in HOURS for p in POLL]
+
+rule snapshots:
+    input: all_done
+    output: os.path.join(RES, "snapshots.txt")
+    run:
+        os.makedirs(RES, exist_ok=True)
+        with open(output[0], "w") as f:
+            f.write("# POD snapshot set (decomposed fields; processor*/0/T_<poll>). No POD done here.\n")
+            for h in HOURS:
+                for p in POLL:
+                    f.write("h%s\t%s\t%s/disp/h%s/%s\tfield=T_%s\n" % (h, p, WORK, h, p, p))
+        print("Snapshots ready:", len(HOURS) * len(POLL), "fields ->", output[0])

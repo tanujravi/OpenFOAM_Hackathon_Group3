@@ -1,0 +1,11 @@
+/*------ fvOptions: vegetation pollutant uptake (vegetationZone) ------*/
+FoamFile { version 2.0; format ascii; class dictionary; object fvOptions; }
+// INITIAL TRIAL: pin T=0 in the canopy cells (perfect volumetric sink).
+vegetationUptake
+{
+    type            fixedValueConstraint;
+    selectionMode   cellZone;
+    cellZone        vegetationZone;
+    fieldValues     { T 0; }
+}
+// LATER deposition (-lambda*T): swap for scalarSemiImplicitSource, injectionRateSuSp { T (0 -1e-3); }

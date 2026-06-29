@@ -1,0 +1,15 @@
+/*------ fvOptions: vegetation canopy POROUS momentum sink (vegetationZone) ------*/
+FoamFile { version 2.0; format ascii; class dictionary; object fvOptions; }
+vegetationCanopy
+{
+    type            explicitPorositySource;
+    explicitPorositySourceCoeffs
+    {
+        type          DarcyForchheimer;
+        selectionMode cellZone;
+        cellZone      vegetationZone;
+        d   (0 0 0);
+        f   (0.4 0.4 0.04);   // = 2*Cd*LAD [1/m]; TUNE to leaf-area density
+        coordinateSystem { origin (0 0 0); e1 (1 0 0); e2 (0 1 0); }
+    }
+}

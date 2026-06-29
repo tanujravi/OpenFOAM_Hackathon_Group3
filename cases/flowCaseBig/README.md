@@ -3,7 +3,7 @@
 Same pipeline as `../flowCase`, on the larger **25.2 × 25.2 km** city4CFD terrain
 (`bigger_terrain_results/`), to study how domain size / boundary distance changes the
 receptor results. **Recentred frame** (same X/Y origin as the small domain; Z0 =
-big-terrain min = 74.29 m). Vegetation is **not** meshed.
+big-terrain min = 74.29 m). Vegetation is a **porous canopy zone** (not a wall — see below).
 
 The 196 roads and 4 receptors are the **same** as the small domain (same CRS), so
 emission mapping and receptor sampling are identical; `../dispersionCaseBig`'s
@@ -24,6 +24,27 @@ Martins Sarmento, Santos Simões).
   lines, in the air).
 - Reused: `0/` ABL BCs (+ a new `bottom` entry), the emission CSVs + wind, and the
   tools.
+
+## Vegetation — two switchable models (porous | wall)
+Pick the model **before meshing** with `../tools/set_vegetation_model.py --flow . --disp ../dispersionCaseBig --model porous|wall` (idempotent). The two modes give
+**different meshes**, so re-mesh the chosen flavour on x86.
+- `wall` = the `round`/guideline method: a snapped `Vegetation` noSlip wall with
+  roughness `z0` (`--z0`, forest~0.8). Adds the veg surface to snappy; flow-only.
+- `porous` (default here) = canopy as a cellZone momentum sink + T uptake (below).
+
+### porous canopy zone
+Vegetation is **not** snapped as a wall — its surface drapes ~8 m above terrain across
+the whole 25 km, so wall-snapping it in the coarse far field makes bad cells. It is a
+**porous momentum sink** instead:
+- `system/topoSetDict` builds a `vegetationZone` cellZone from `Mesh_Vegetation.obj`
+  (`surfaceToCell`, ~8 m canopy band); `runallgeo.sh` runs `topoSet -parallel` after
+  meshing so the zone lives in the decomposed mesh.
+- `constant/fvOptions`: `explicitPorositySource` (Darcy-Forchheimer) canopy drag in that
+  zone. **Tune** Forchheimer `f` (~2·Cd·LAD) and topoSet `nearDistance` (tree height).
+- `../tools/preprocess_geometry.py --vegetation` recenters + cleans `Mesh_Vegetation.obj`.
+
+The dispersion case reuses this decomposed mesh, so the zone carries over and applies the
+canopy pollutant uptake there (see `../dispersionCaseBig/README.md`).
 
 ## Mesh resolution (buildings + streets)
 Background inner-block cell = `2*s/Ns0 = 3600/24 = 150 m` (vert ~175 m); snappy halves

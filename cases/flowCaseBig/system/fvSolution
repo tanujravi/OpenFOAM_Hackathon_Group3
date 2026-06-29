@@ -68,7 +68,7 @@ SIMPLE
         "(k|omega|epsilon)" 1e-5;
     }
 
-    nNonOrthogonalCorrectors 1;   // relaxed for speed (re-check after the clean re-mesh)
+    nNonOrthogonalCorrectors 2;   // back to 2: mesh has a 70.8deg non-orth face + skew (diverged at 1)
     pRefCell        0;
     pRefValue       0;
 
@@ -78,7 +78,7 @@ relaxationFactors
 {
     fields
     {
-        p               0.3;
+        p               0.5;
     }
     equations
     {

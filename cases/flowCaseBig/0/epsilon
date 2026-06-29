@@ -22,5 +22,6 @@ boundaryField
         value            uniform $epsilonInlet;
     }
     Buildings   { type epsilonWallFunction; value uniform $epsilonInlet; }
+
 }
 // ************************************************************************* //

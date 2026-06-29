@@ -15,6 +15,11 @@ Both reuse **one mesh** (carved once) and **one frozen flow per hour** across al
 scenarios/pollutants, so only the emission scaling differs between scenarios —
 the fairness requirement.
 
+> **POD-snapshot run (decomposed, ARM).** For the fully-decomposed multi-hour run that
+> produces `T_CO`/`T_NOx` snapshots for POD/PODI — one `sbatch` job per hour/pollutant,
+> no reconstruct/decompose — see **`README_podrun.md`** + `Snakefile.podrun`, and pick
+> the hours with `../tools/select_hours.py`. (POD training itself is left to you.)
+
 ## Layout
 ```
 workflow/

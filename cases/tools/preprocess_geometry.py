@@ -170,6 +170,7 @@ def main():
                     help="building OBJs to merge (default: terrain_and_buildings/Mesh_Buildings_[0-5].obj)")
     ap.add_argument("--roi", default=os.path.join(ROOT, "ROI", "ROI.obj"))
     ap.add_argument("--roads", default=os.path.join(ROOT, "traffic", "snapped_road_segments.csv"))
+    ap.add_argument("--vegetation", default=None, help="canopy OBJ to recenter for the porous zone (optional)")
     ap.add_argument("--out", default=os.path.join(ROOT, "cases", "flowCase", "geo"))
     ap.add_argument("--label", default="small (6.3km) Guimaraes domain")
     args = ap.parse_args()
@@ -199,6 +200,11 @@ def main():
 
     nr = transform_roads(args.roads, os.path.join(GEO, "snapped_road_segments_recentred.csv"), off)
     print(f"[roads]     {nr} lines -> {GEO}/snapped_road_segments_recentred.csv")
+
+    if args.vegetation:
+        nv = transform_single(args.vegetation, os.path.join(GEO, "Mesh_Vegetation.obj"), off, "Vegetation")
+        clean_merged(os.path.join(GEO, "Mesh_Vegetation.obj"), "Vegetation")
+        print(f"[veg]       {nv} verts -> {GEO}/Mesh_Vegetation.obj (recentred+cleaned; porous-zone topoSet input)")
 
     rec = {
         "description": "Pure translation; recentred frame for the %s." % args.label,

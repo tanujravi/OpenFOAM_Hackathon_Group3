@@ -25,6 +25,10 @@ small-domain READMEs are unchanged.
 - `0/T` has a **`bottom`** entry (`zeroGradient`): unlike the small domain, the big
   mesh keeps the floor patch (the cylinder reaches past the terrain at a few far
   edges), so every field — including `T` — needs a `bottom` BC. No flux through it.
+- **Vegetation = porous T sink** (`constant/fvOptions`): the canopy `vegetationZone`
+  (inherited from the flow mesh) pins `T=0` in those cells via a `fixedValueConstraint`
+  (perfect uptake, initial trial); a `scalarSemiImplicitSource` (−λT deposition) is
+  ready-commented for later. It's a cellZone, **not** a `Vegetation` patch.
 
 ## Big-mesh handoff (avoid serial reconstruct)
 For the 40 M-cell mesh, reconstructing/​re-decomposing the whole mesh is slow and

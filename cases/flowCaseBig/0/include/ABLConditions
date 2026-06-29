@@ -4,6 +4,7 @@ Zref                 10.0;      // reference height [m]
 angle                -37.4505;    // wind dir, deg: flowDir=(cos,sin)  <-- HOURLY (set_wind)
 zDir                 (0 0 1);   // vertical
 z0                   uniform 0.25;   // terrain aerodynamic roughness [m]
+z0vegetation         uniform 0.8;      // Vegetation hydraulic roughness in m
 d                    uniform 0.0;    // displacement height
 z0_                  0.25;      // must equal z0 above (scalar form)
 kappa                0.41;
@@ -20,4 +21,4 @@ uStar                #calc "( $Uref * $kappa ) / log(( $Zref + $z0_ )/ $z0_ )";
 kInlet               #calc "( $uStar * $uStar ) / sqrt( $Cmu )";
 epsilonInlet         #calc "pow($uStar,3) / ( $kappa * ( $Zref + $z0_ ))";
 Uvector              (#calc "$Uref*$comp1" #calc "$Uref*$comp2" 0);
-// ************************************************************************* //
+/

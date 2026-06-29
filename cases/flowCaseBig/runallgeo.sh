@@ -34,6 +34,7 @@ eval "sed -i \"$sed_command\" system/decomposeParDict"
 # Copy the file to the right location
 rsync -rhP $outMesh1 constant/triSurface/
 rsync -rhP $outMesh2 constant/triSurface/
+[ -f geo/Mesh_Vegetation.obj ] && rsync -rhP geo/Mesh_Vegetation.obj constant/triSurface/   # porous-zone topoSet input (not snapped)
 echo "Done with copying the geometry...."
 # Run surfaceFeatures
 #surfaceFeatures > logs/surfaceFeatures.log
@@ -60,6 +61,11 @@ if [ $snapPar ]; then
 	# Run check mesh for sanity
 	echo "Running checkmesh utility......."
 	srun checkMesh -parallel > logs/checkMesh.log 2>&1
+	# Porous vegetation: build the 'vegetationZone' cellZone on the decomposed mesh
+	if [ -f system/topoSetDict ] && [ -f constant/triSurface/Mesh_Vegetation.obj ]; then
+		echo "Building vegetationZone cellZone (porous canopy)......"
+		srun topoSet -parallel > logs/topoSet.log 2>&1
+	fi
 else
 	echo "Snappy Hex Mesh runs in serial......"
 	# Generate the snappyHexMesh
