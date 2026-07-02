@@ -10,7 +10,17 @@ meshing strategy, the two-solver (flow → dispersion) split, the post-mesh stre
 patch creation, the emission mapping, receptor sampling, and the orchestration.
 
 
-**Ricardo Andrade note:** The canopy/merged.obj file was not uploaded because it is very large (1.5 GB)
+**Note:** `canopy/merged.obj` (1.5 GB) is not committed to this repo. The vegetation canopy
+is handled on the **big domain** (`flowCaseBig`/`dispersionCaseBig`) as a porous momentum
+sink for the flow and a scalar sink for the dispersion; the dispersion canopy is now a
+**finite deposition** −λT (`scalarSemiImplicitSource`), replacing the earlier perfect-sink
+(T=0) trial — see `dispersionCaseBig/constant/fvOptions`.
+
+> **Status (updated).** The pipeline below is complete and has run end-to-end on the cluster:
+> all four scenarios (reference/S1/S2/S3), the 24 h→10 representative-hour POD sweep, receptor
+> tables (surface **and** volume metrics), spatial maps, a ground-level concentration field, and
+> an auto-generated technical report. See §11 for the reporting/analysis toolchain and
+> `cases/tools/README.md` for the tools. The `Ricardo Andrade note:` TODOs are resolved inline below.
 ---
 
 ## 1. Big picture
@@ -71,7 +81,9 @@ index (validated: IDs ≤ 192 < 196, the two S3 tiers don't overlap).
 ---
 
 ## 3. Recentred coordinate frame
-**Ricardo Andrade note:** Check if this translation makes sense
+**Resolved:** validated — this pure translation is used for every run; the recentred and UTM
+receptor centroids in `receptors.json` overlay the road network exactly (confirmed when building
+the spatial maps in `cases/tools/make_maps.py`).
 
 The provided geometry sits at large UTM-like offsets (X ≈ −13 000, Y ≈ 197 000).
 The mesh templates assume a city centred on the origin with the ground near Z = 0,
@@ -137,7 +149,9 @@ Steady RANS (`simpleFoam`, **k-ε** with neutral-ABL coefficients, Hargreaves &
 Wright) produces the hourly wind field that the dispersion stage advects on.
 
 
-**Ricardo Andrade Note:** We should check if this velocity boundary condition makes sense in this case.
+**Resolved:** the atmospheric-inlet BCs below were used for all production runs; the two-stage
+flow converges and the resulting receptor concentrations are physically reasonable (NOx ≈ 3–6 µg/m³
+mean at the receptors, well below EU/WHO NO2 references).
 
 **Atmospheric boundary-layer inlet (the `round`-template approach).** The domain
 boundary is a single cylindrical `inletOutlet` patch and the hourly wind arrives from
@@ -190,9 +204,9 @@ summed). The driver loops `CO` then `NOx`, saving `T_CO` and `T_NOx`.
 *(A single-run alternative — two `scalarTransport` function objects, each with an
 `fvOptions` `scalarSemiImplicitSource` — is noted in §10 as the production option.)*
 
-**Ricardo Andrade Note:** The chosen approach here is a single patch "streets" whith a non-uniform fixed gradient
-with the emission values for each street inside the patch (face). Right now, the pollutants are separate 
-This still needs to be tested in the cluster.
+**Resolved:** tested on the cluster — the single `streets` non-uniform `fixedGradient` approach
+ran successfully for every hour/scenario/pollutant (CO and NOx kept separate). This is the
+production dispersion setup.
 
 
 ## 6.1 Street patch creation (carved in the FLOW case, BEFORE solving)
@@ -227,7 +241,10 @@ The dispersion case then **reuses** this split mesh + frozen fields +
 > `foamFormatConvert` first if it is binary.
 
 ### 6.2 Emission mapping (the scenario logic)
-**Ricardo Andrade Note**: Should ignore for now the different scenario part and just focus on reference. 
+**Resolved:** all four scenarios (reference/S1/S2/S3) have been run. The S3 ID→segment mapping was
+validated against the road geometry — the integers in `road_ids_reduction.txt` are the **0-based
+`geo_id`** (emission-CSV row index), and under that mapping the reduced set is predominantly the
+**Circular Urbana** ring plus one **EN101** troço, i.e. the Metro-Bus corridor (not the full EN101).
 
 `cases/tools/map_emissions.py` applies the mobility-scenario scaling to the per-segment
 hourly factors (this is the "correct scenario implementation" deliverable):
@@ -256,7 +273,12 @@ absolute concentration. (Sanity check: a ~30 g/h segment over ~1000 m² gives
 
 ## 7. Stage 3 — Receptors & results table
 
-**Ricardo Andrade Note:** This is just a Function object on the patches. The ROI should probably be something like for each street an area average of the polution of the air above it
+**Resolved:** implemented. Two receptor metrics are available and give the same scenario
+conclusions (see §11): (1) the surface `areaAverage` below, and (2) — as suggested — a **volume
+average of the breathing air in a box above each receptor** (`volFieldValue` over a `cellZone`
+built by `cases/tools/make_receptor_zones.py`). The **volume average is the primary reported
+metric** (breathing-air exposure); the surface areaAverage is kept as a robustness cross-check
+(the two agree on scenario %-changes within ~2 percentage points).
 
 The four receptors are the four connected components of `ROI.obj`, split by
 `cases/tools/split_roi.py` into `dispersionCase/constant/triSurface/receptor{1..4}.obj`
@@ -271,13 +293,18 @@ The four receptors are the four connected components of `ROI.obj`, split by
 `results/<run>/receptor_table.csv`. With `--reference <dir>` it adds absolute and
 **% change vs the reference scenario** per receptor/pollutant.
 
-> Receptor `site_name` is currently `TBD` — match the UTM centroids in
-> `receptors.json` to the four named sites on a map (a one-time manual step).
+> Receptor `site_name`s are resolved: receptor1 = Hospital da Senhora da Oliveira (Public
+> Hospital), receptor2 = E.S. Francisco de Holanda, receptor3 = E.S. Martins Sarmento,
+> receptor4 = E.B./S. de Santos Simões (in `receptors.json`).
 
 ---
 
 ## 8. Orchestration — flow precursor, then dispersion driver
-**Ricardo Andrade Note: IGNORE THIS FOR NOW**
+**Resolved:** the single-hour driver below still works, and on top of it the **24-hour sweep and
+POD-snapshot orchestration are built** (`cases/workflow/`: `Snakefile`, `Snakefile.transient`,
+`Snakefile.podrun`), submitting to SLURM via Snakemake's **cluster-generic** executor. The POD
+workflow additionally computes the surface + volume receptor tables and the report inputs — see
+`cases/workflow/README_podrun.md` and §11.
 
 A one-hour run is **two steps**, both launched from inside `cases/`. The flow is
 solved once for the hour (it carves the `streets` patch into its own mesh *before*
@@ -323,12 +350,24 @@ referenceCase/
       set_emissions.py        per-segment non-uniform fixedGradient on streets
       split_roi.py            ROI -> 4 receptor surfaces
       receptor_table.py       receptor µg/m³ table (+ % vs reference)
+      # --- reporting & analysis (see cases/tools/README.md) ---
+      make_report.py          receptors_long.csv -> receptor_summary + figs + air_quality_report.pdf
+      make_maps.py            spatial maps (road network + receptor concentrations, per scenario)
+      make_techreport.py      polished technical_report.pdf (--compare-summary = surface vs volume)
+      make_receptor_zones.py  volume-average receptor cellZones + volFieldValue FO (snapshot|solve)
+      run_receptor_volumes.sh volume receptors from FINISHED snapshots (postProcess + readFields)
+      collect_receptor_volumes.sh  gather volume receptors written DURING the solve
+      collect_receptors.py    surface receptor postProcessing -> receptors.csv (sweep collector)
+      aggregate_day.py select_hours.py clean_surface.py set_vegetation_model.py  (sweep/POD helpers)
     flowCase/                 FLOW case: ABL inlet (atmBoundaryLayerInlet*), k-epsilon
       runallgeo.sh            STAGE 0 meshing (SLURM)
       job_flow.sh             STAGE 1 flow: carve streets + 2-stage simpleFoam (SLURM)
       0/ system/ constant/ geo/
     flowCaseOldBC/            FLOW case, freestream inlet + k-omega SST (fallback)
     dispersionCase/           DISPERSION case: 0/T system/ constant/triSurface/ geo/
+    flowCaseBig/  dispersionCaseBig/   BIG 25 km city4CFD domain (porous + finite-deposition canopy)
+    postpro/                  ParaView figures: pv_dispersion_figures.py, pv_ground_slice.py, pv_mesh_inspect.py
+    workflow/                 Snakemake sweeps (quasi-steady / transient / POD) -> receptor tables + report
     round/                    uploaded ABL template (reference only)
     results/                  per-run receptor tables + fields (regenerable)
 ```
@@ -358,10 +397,47 @@ parallel on 96 ranks via SLURM.
   from a cold start diverges (k/epsilon blow-up -> GAMG SIGFPE). ABL BCs need
   `libs (atmosphericModels)` in both flow and dispersion `controlDict`.
 
-**Open items / next steps:**
-- Confirm the four receptor `site_name`s against a map.
-- Decide DT (constant vs nut/Sc_t), and tune mesh refinement vs cell count.
-- Two-pollutant single-run path 
-- Canopy as a porous/momentum-sink zone.
-- Domain-influence comparison on the 25 km `city4CFD` domain.
-- Daily aggregation (mean + peak) across the 24 hourly states, per receptor.
+**Done since first draft:** receptor `site_name`s resolved · all four scenarios run · S3 mapping
+validated · canopy as porous + finite-deposition zone (big domain) · 24 h→10-hour POD sweep with
+daily mean/peak aggregation · **volume-average receptor metric** (breathing air) alongside the
+surface areaAverage · spatial maps + ground-level concentration field · auto technical report.
+Cluster gotchas fixed: ARM/x86 Snakemake interpreter mismatch, `--cluster`→cluster-generic
+executor, UTF-8 locale for pvbatch, offscreen/`SkipZeroTime` for ParaView, decomposed-only
+sweep scripts (no serial full-mesh decompose/reconstruct).
+
+**Still open / could improve:** DT (constant vs nut/Sc_t) · mesh refinement vs cell count ·
+Forchheimer `f` and canopy λ tuning from leaf-area data · fully-transient flow (pimpleFoam) ·
+POD/PODI training on the saved snapshots.
+
+---
+
+## 11. Reporting, receptor metrics & post-processing
+
+All analysis/reporting tools live in `cases/tools/` (Python: matplotlib, numpy, reportlab; stdlib
+otherwise) and `cases/postpro/` (ParaView `pvbatch`). See **`cases/tools/README.md`** for the full
+toolchain; the short version:
+
+**Receptor tables → report.** Each POD dispersion run writes per-receptor concentrations; a
+collector turns them into `receptors_long.csv` (`hour,scenario,pollutant,receptor,site,conc_ugm3`),
+which feeds `make_report.py` → `receptor_summary.csv` + figures (grouped bars, %-change heatmap,
+diurnal profiles) + `air_quality_report.pdf`; then `make_maps.py` (road-network + receptor maps)
+and `make_techreport.py` build the polished `technical_report.pdf`.
+
+**Two receptor metrics.** *Surface* `areaAverage` on the ROI surface (built into the dispersion
+`system/receptors`), and *volume* `volAverage` over a box of breathing air above each receptor
+(`make_receptor_zones.py` builds the cellZones + `volFieldValue` FO). Compute the volume metric
+from finished runs with `run_receptor_volumes.sh` (postProcess on the `T_<poll>` snapshots at time 0,
+using a `readFields` FO; `FIXHDR=0` skips the slow header fix) or, for new runs, during the solve via
+`collect_receptor_volumes.sh` (wired into `Snakefile.podrun`). The two agree on scenario %-changes
+within ~2 pp; **volume is the primary reported metric**, surface a robustness cross-check
+(`make_techreport.py --compare-summary`).
+
+**Concentration-field map.** `postpro/pv_ground_slice.py` renders a top-down ground-level
+concentration slice (ParaView); `--extract` avoids OpenGL by resampling to a grid and drawing with
+matplotlib, `--decomposed` reads `processor*/` without reconstruct. Snapshots live at **time 0**
+(`--time 0`), fix the `T_<poll>` header, and on headless nodes use `--force-offscreen-rendering`
+and a UTF-8 locale.
+
+**Key result.** S1 ≈ −20 %, S2 ≈ −40 % uniformly at every receptor (linear response — a workflow
+consistency check); the Metro Bus (S3) is spatially selective — ≈ −40 % at the Public Hospital
+(the corridor wraps it) but only ≈ −5 % at Santos Simões (off-corridor).

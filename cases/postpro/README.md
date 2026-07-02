@@ -77,3 +77,31 @@ coloured by `cellLevel` -> see street/building resolution) and
 transitions). Flags: `--reconstructed` (read serial mesh instead), `--patches`,
 `--slice-axis x|y|z` + `--slice-origin X Y Z`, `--no-slice`, `--res`.
 `cellLevel` comes from snappy; if it's missing the surfaces render solid grey.
+
+## Ground-level concentration field (pv_ground_slice.py)
+
+Top-down map of the CFD concentration field — the "clear visualisation of pollutant
+concentration fields" the challenge asks for. Renders a horizontal slice at breathing height
+(`--z`), coloured by `T_CO`/`T_NOx`, receptors overlaid → `<label>_<field>_ground.png`.
+
+**The POD snapshots live at TIME 0** (`run_disp_decomp.sh` stashes the converged field into
+`processor*/0/T_<poll>`), so use `--time 0` (the default). Each POD disp dir holds ONE pollutant,
+and `--case` points at the RUN dir, not the template.
+
+Three ways to run (each disp dir; fix the FoamFile `object` header first — it still says `T`):
+```bash
+# (A) GL-free, no reconstruct (recommended: immune to headless-OpenGL crashes)
+export LC_ALL=C.UTF-8 LANG=C.UTF-8            # pvbatch needs a UTF-8 locale or it aborts
+for p in "$D"/processor*; do sed -i 's/object[[:space:]]\+T;/object T_NOx;/' "$p"/0/T_NOx; done
+srun pvbatch pv_ground_slice.py --case "$D" --decomposed --extract --time 0 \
+    --label reference_h11 --fields T_NOx --z 2.0 --triSurface ../dispersionCaseBig/constant/triSurface --out figs
+# (B) ParaView rendering (needs a working GL context): add --force-offscreen-rendering
+# (C) reconstruct + serial:  redistributePar -reconstruct -time 0 -parallel  then plain pvbatch
+```
+Notes: `--extract` resamples the slice to a grid and draws with matplotlib (no ParaView
+rendering → no OpenGL); `--decomposed` reads `processor*/` directly; `SkipZeroTime=0` is set so
+the reader sees time 0; `scalarTransportFoam` leaves a tiny negative undershoot so the render path
+sets a positive range before enabling the log colour scale. Cluster ParaView here is
+**5.11.2-foss-2023a** (Python 3.11) — do not mix a Python-3.13 numpy/matplotlib module onto
+`PYTHONPATH` (ABI clash); for `--extract`, `PYTHONPATH=` or a matplotlib module built for the
+same toolchain.

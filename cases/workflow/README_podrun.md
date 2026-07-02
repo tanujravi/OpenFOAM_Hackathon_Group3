@@ -61,3 +61,31 @@ Dependency: each dispersion waits only for *its own* hour's flow.
   (`system/topoSetDict` `nearDistance`) are physics knobs — set from leaf-area density
   and tree height.
 - POD/PODI training is a separate step you run on `T_<poll>` (not in this workflow).
+
+## Updates (2026-07)
+
+`Snakefile.podrun` now also produces the **receptor tables and report inputs**, not just POD
+snapshots. Added rules (`localrules` for the light ones):
+- `receptors` → `results_pod/receptors_long.csv` — **surface** areaAverage, via
+  `collect_receptors.py` on each disp run's `postProcessing`.
+- `roi_zones` (once, marker `MASTER/.roi_zones_done`) — `make_receptor_zones.py --field T
+  --no-readfields --wire-controldict` + `topoSet` the breathing-air `roiNZone` cellZones into the
+  shared mesh, so every `disp` solve computes a `volFieldValue`. `disp` now depends on it.
+- `receptors_volume` → `results_pod/receptors_long_vol.csv` — **volume** volAverage, via
+  `collect_receptor_volumes.sh` (reads the FO output written during the solve). Box knobs in
+  `config_pod.yaml`: `roi_halfwidth/height/below`, optional `roi_exclude_zone`.
+
+Both CSVs feed the report pipeline in `../tools/` (see `../tools/README.md`); volume is the
+primary metric, surface the cross-check.
+
+**Canopy = finite deposition.** `dispersionCaseBig/constant/fvOptions` now applies a first-order
+dry-deposition sink −λT (`scalarSemiImplicitSource`, λ≈1e-3 s⁻¹) in `vegetationZone`, replacing the
+perfect-sink (T=0) trial, so canopy cells hold realistic concentrations. To re-solve with it,
+delete `runs_pod/disp` (old `DISP_DONE` would be skipped).
+
+**Cluster launcher.** `run_podrun.sh` submits via Snakemake's **cluster-generic** executor
+(`--executor cluster-generic --cluster-generic-submit-cmd "sbatch … --parsable …"`;
+`--cluster` was removed in Snakemake ≥ 8). Gotchas fixed: run the controller on an **aarch64**
+node with an aarch64-native Snakemake (its `sys.executable` is re-invoked on the compute nodes);
+`config_pod.yaml` `python_bin` must be an aarch64 numpy Python. To reuse converged flows for a new
+scenario, symlink `runs_pod/flow` into a fresh `work_dir` and run with `--rerun-triggers mtime`.

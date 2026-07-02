@@ -4,7 +4,7 @@ disp_case:   "../dispersionCaseBig"  # dispersion template (0/T, receptors, fvOp
 tools:       "../tools"
 work_dir:    "runs_pod"              # each run lives in its OWN folder here (parallel-safe)
 results_dir: "results_pod"
-python_bin:  "/usr/bin/python3"      # ABSOLUTE numpy python (set to the cluster's)
+python_bin:  "usr/bin/python3"      # ABSOLUTE numpy python (set to the cluster's)
 
 pollutants:  [CO, NOx]
 scenario:    reference               # POD is over hours; one scenario
@@ -13,3 +13,9 @@ DT:          1.0
 flow_2ndorder_iters: 2000
 hours_file:  "selected_hours.txt"    # from select_hours.py; falls back to `hours:` below
 hours:       [0, 1, 3, 5, 8, 9, 11, 14, 17, 23]
+
+# --- volume-average receptor sampling (box of air above each receptor) ---
+roi_halfwidth: 30        # box half-width in x,y [m]
+roi_height:    12        # box top above receptor centroid [m]
+roi_below:     2         # box bottom below centroid [m]
+# roi_exclude_zone: vegetationZone   # optional: subtract a cellZone from the box

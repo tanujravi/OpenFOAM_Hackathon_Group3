@@ -50,3 +50,21 @@ and the mesh-resolution table.
 
 > Regenerable: `constant/polyMesh/` (copied from flowCaseBig at run time),
 > `processor*/`, `postProcessing/`, time dirs.
+
+## Updates (2026-07)
+
+- **Canopy = finite deposition.** `constant/fvOptions` now applies a first-order dry-deposition
+  sink −λT in `vegetationZone` (`scalarSemiImplicitSource`, `volumeMode specific`,
+  `injectionRateSuSp { T (0 -1e-3); }`, λ≈1e-3 s⁻¹), replacing the perfect-sink
+  `scalarFixedValueConstraint` (T=0) trial — so vegetated cells hold realistic (not annihilated)
+  concentrations. Tune λ ≈ deposition-velocity × leaf-area-density. The perfect-sink form is kept
+  commented for reference.
+- **Volume receptor sampling.** In addition to the surface `areaAverage` in `system/receptors`, a
+  `volFieldValue volAverage` over a box of breathing air above each receptor is available
+  (`../tools/make_receptor_zones.py` builds `roiNZone` + the FO). It is the **primary reported
+  metric**; the surface areaAverage is a robustness cross-check. Two collectors in `../tools/`:
+  `run_receptor_volumes.sh` (post-process finished `T_<poll>` snapshots at time 0, with a
+  `readFields` FO) and `collect_receptor_volumes.sh` (gather values written during the solve; wired
+  into `../workflow/Snakefile.podrun`).
+- **fvOptions type name (ESI v2512):** the constraint form must be `scalarFixedValueConstraint`
+  (typed), not the bare `fixedValueConstraint`, or the solver reports "Unknown fvOption type".

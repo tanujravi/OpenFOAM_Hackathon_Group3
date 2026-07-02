@@ -25,7 +25,18 @@ SMK_JOBS=${SMK_JOBS:-20}        # max jobs submitted at once (rest pend); set as
 ARMPART=${ARMPART:-normal-arm}  # your ARM partition name
 ACCOUNT=${ACCOUNT:-f202500001hpcvlabepicurex}
 
+# Snakemake >=8 removed --cluster from core; use the cluster-generic executor plugin.
+# (one-time install if missing:  pip install snakemake-executor-plugin-cluster-generic)
+python -c 'import snakemake_executor_plugin_cluster_generic' 2>/dev/null \
+  || { echo "ERROR: missing plugin -- run: pip install snakemake-executor-plugin-cluster-generic"; exit 1; }
+
 snakemake -s Snakefile.podrun --jobs "$SMK_JOBS" --latency-wait 120 --keep-going \
-  --cluster "sbatch --account=$ACCOUNT --partition=$ARMPART --nodes=8 --ntasks-per-node=48 \
-             --mem=0 --time=06:00:00 --job-name=pod_{rule} --output=logs/{rule}.%j.out"
-# snakemake>=8: replace --cluster with a SLURM profile / --executor slurm (see workflow README).
+  --executor cluster-generic \
+  --cluster-generic-submit-cmd "sbatch --account=$ACCOUNT --partition=$ARMPART \
+     --nodes=8 --ntasks-per-node=48 --mem=0 --time=06:00:00 \
+     --parsable --job-name=pod_{rule} --output=logs/{rule}.%j.out"
+# Keeps your design: each sbatch grabs the 8x48 allocation, the job script's own
+# `srun ... -parallel` then uses all 384 ranks (do NOT use --executor slurm here -- it
+# would wrap jobs in its own srun and nest inside your scripts' srun calls).
+# Optional, more robust SLURM status polling (avoids false "missing output" under load):
+#   --cluster-generic-status-cmd "<a sacct/squeue status script>"

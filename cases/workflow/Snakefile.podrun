@@ -28,19 +28,46 @@ if os.path.exists(hf):
 else:
     HOURS = [str(h) for h in config.get("hours", [])]
 
+# ---- volume-average receptor sampling (box of air above each receptor) ----
+ROI_HW = config.get("roi_halfwidth", 30); ROI_H = config.get("roi_height", 12); ROI_BELOW = config.get("roi_below", 2)
+ROI_EXCLUDE = ("--exclude-zone %s" % config["roi_exclude_zone"]) if config.get("roi_exclude_zone") else ""
+HOURS_CSV = ",".join(HOURS); POLL_STR = " ".join(POLL)
+
 wildcard_constraints:
     hour = r"\d+", poll = r"[A-Za-z0-9]+"
 
+# Lightweight aggregation rules run in the controller (login node), NOT sbatch'd.
+localrules: all, snapshots, receptors, receptors_volume
+
 rule all:
-    input: os.path.join(RES, "snapshots.txt")
+    input:
+        os.path.join(RES, "snapshots.txt"),
+        os.path.join(RES, "receptors_long.csv"),
+        os.path.join(RES, "receptors_long_vol.csv")
 
 rule flow_hour:
     output: os.path.join(WORK, "flow", "h{hour}", "FLOW_DONE")
     shell:
         r'bash "{SCRIPTS}/run_flow_hour_decomp.sh" {wildcards.hour} "{MASTER}" "{TOOLS}" "{WORK}" {NP} {IT2} "{PY}" && touch {output}'
 
+rule roi_zones:
+    # One-time: write the volume-average FO into the disp template + wire its controlDict,
+    # and topoSet the roi cellZones into the SHARED mesh, so every disp solve computes the
+    # volFieldValue over roiNZone. Marker lives in MASTER (shared across scenario workflows:
+    # the first run builds it, the rest see the marker and skip -> avoids double-topoSet).
+    output: os.path.join(MASTER, ".roi_zones_done")
+    shell:
+        r'"{PY}" "{TOOLS}/make_receptor_zones.py" --disp "{DISPSRC}" --out "{DISPSRC}/system" '
+        r'--field T --no-readfields --wire-controldict "{DISPSRC}/system/controlDict" '
+        r'--halfwidth {ROI_HW} --height {ROI_H} --below {ROI_BELOW} {ROI_EXCLUDE} && '
+        r'cp "{DISPSRC}/system/topoSetDict" "{MASTER}/system/topoSetDict" && '
+        r'( cd "{MASTER}" && srun -n {NP} topoSet -parallel -dict system/topoSetDict > log.topoSet.roi 2>&1 ) && '
+        r'touch {output}'
+
 rule disp:
-    input:  os.path.join(WORK, "flow", "h{hour}", "FLOW_DONE")
+    input:
+        os.path.join(WORK, "flow", "h{hour}", "FLOW_DONE"),
+        os.path.join(MASTER, ".roi_zones_done")
     output: os.path.join(WORK, "disp", "h{hour}", "{poll}", "DISP_DONE")
     shell:
         r'bash "{SCRIPTS}/run_disp_decomp.sh" {wildcards.hour} {wildcards.poll} "{MASTER}" "{DISPSRC}" "{TOOLS}" "{WORK}" {NP} {DT} {SCEN} "{PY}" && touch {output}'
@@ -59,3 +86,37 @@ rule snapshots:
                 for p in POLL:
                     f.write("h%s\t%s\t%s/disp/h%s/%s\tfield=T_%s\n" % (h, p, WORK, h, p, p))
         print("Snapshots ready:", len(HOURS) * len(POLL), "fields ->", output[0])
+
+rule receptors:
+    # Parse each (hour,poll) dispersion's receptor surfaceFieldValue FO output into
+    # one tidy table. Runs locally (login node) after all dispersions are done.
+    input: all_done
+    output: os.path.join(RES, "receptors_long.csv")
+    run:
+        os.makedirs(RES, exist_ok=True)
+        tri = os.path.join(DISPSRC, "constant", "triSurface")
+        with open(output[0], "w") as out:
+            out.write("hour,scenario,pollutant,receptor,site,conc_ugm3\n")
+            for h in HOURS:
+                for p in POLL:
+                    dd = os.path.join(WORK, "disp", "h%s" % h, p)
+                    rc = os.path.join(dd, "receptors.csv")
+                    shell(
+                        '"{PY}" "{TOOLS}/collect_receptors.py" --disp "{dd}" '
+                        '--triSurface "{tri}" --hour {h} --scenario {SCEN} '
+                        '--pollutant {p} --out "{rc}"'
+                    )
+                    with open(rc) as f:
+                        next(f, None)  # skip per-run header
+                        for line in f:
+                            out.write(line)
+        print("Receptor table ready ->", output[0])
+
+rule receptors_volume:
+    # Volume-average receptor table from the volFieldValue FOs computed DURING each disp
+    # solve (roiNZone). Runs locally after all dispersions are done.
+    input: all_done
+    output: os.path.join(RES, "receptors_long_vol.csv")
+    shell:
+        r'bash "{TOOLS}/collect_receptor_volumes.sh" "{DISPSRC}" "{WORK}/disp" "{output}" '
+        r'"{HOURS_CSV}" "{POLL_STR}" {SCEN}'

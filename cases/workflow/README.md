@@ -97,3 +97,19 @@ the flow piecewise-steady (hourly frozen fields) as the practical middle ground.
 snakemake clean                              # rm runs/ results/ .snakemake/
 snakemake -s Snakefile.transient clean       # rm runs/trans results_transient/ .snakemake/
 ```
+
+## Updates (2026-07)
+
+- **ARM-safe scripts.** `run_flow_hour.sh`, `run_disp.sh`, `run_transient_day.sh` no longer do a
+  full **serial** mesh `decomposePar`/`reconstructPar` (which OOMs the ~40 M-cell big mesh on ARM).
+  In the parallel (`PAR=true`) path the pre-decomposed mesh is **symlinked** and only FIELDS move:
+  `decomposePar -fields` scatters, and `redistributePar -reconstruct -parallel` gathers the frozen
+  flow (dispersion needs no gather — receptors come from the parallel FOs). Requires `$FLOW`
+  pre-decomposed (`processor*/constant`) + a serial mesh; `NP` must equal the decomposition. The
+  `frozen/U` output contract is unchanged, so these Snakefiles need no edits.
+- **Snakemake ≥ 8 (cluster).** `--cluster "sbatch …"` was removed from core; use
+  `--executor cluster-generic --cluster-generic-submit-cmd "sbatch … --parsable …"` (needs
+  `snakemake-executor-plugin-cluster-generic`). See `README_podrun.md` for the same fix in
+  `run_podrun.sh`, plus the ARM/x86 interpreter and locale gotchas.
+- **Receptor volume metric.** The POD workflow (`Snakefile.podrun`) also builds a *volume-average*
+  receptor table alongside the surface one — see `README_podrun.md` and `../tools/README.md`.
