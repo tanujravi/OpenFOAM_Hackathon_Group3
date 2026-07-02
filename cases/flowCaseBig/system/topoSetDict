@@ -1,0 +1,15 @@
+/*------ topoSetDict: build 'vegetationZone' (porous canopy) ------*/
+FoamFile { version 2.0; format ascii; class dictionary; object topoSetDict; }
+actions
+(
+    {
+        name vegetationCells; type cellSet; action new; source surfaceToCell;
+        sourceInfo
+        {
+            file "constant/triSurface/Mesh_Vegetation.obj"; useSurfaceOrientation false;
+            outsidePoints ((0 0 1500)); includeCut true; includeInside false;
+            includeOutside false; nearDistance 10; curvature -100;
+        }
+    }
+    { name vegetationZone; type cellZoneSet; action new; source setToCellZone; sourceInfo { set vegetationCells; } }
+);

@@ -1,0 +1,19 @@
+FoamFile { version 2.0; format ascii; class volScalarField; object nut; }
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+#include "include/ABLConditions"
+dimensions      [0 2 -1 0 0 0 0];
+internalField   uniform 0;
+boundaryField
+{
+    inletOutlet  { type calculated; value uniform 0; }
+    top          { type symmetry; }
+    bottom      { type calculated; value uniform 0; }
+    Terrain
+    {
+        type            atmNutkWallFunction;
+        z0               $z0;
+        value            uniform 0;
+    }
+    Buildings    { type nutkWallFunction; value uniform 0; }
+}
+// ************************************************************************* //

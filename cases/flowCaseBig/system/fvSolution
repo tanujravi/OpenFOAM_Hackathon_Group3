@@ -1,0 +1,95 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  8
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    p
+    {
+        solver          GAMG;
+        smoother        GaussSeidel;
+        tolerance       1e-7;
+        relTol          0.1;
+    }
+
+    U
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        tolerance       1e-8;
+        relTol          0.1;
+	nSweeps		1;
+    }
+
+    k
+    {
+        solver           smoothSolver;
+        smoother         GaussSeidel;
+        tolerance        1e-8;
+        relTol           0.1;
+        nSweeps          1;
+    }
+
+    epsilon
+    {
+        solver           smoothSolver;
+        smoother         GaussSeidel;
+        tolerance        1e-8;
+        relTol           0.1;
+        nSweeps          1;
+    }
+
+    Phi
+    {
+        $p;
+    }
+}
+potentialFlow { nNonOrthogonalCorrectors 10; PhiRefCell 0; PhiRefValue 0; }
+
+SIMPLE
+{
+    consistent               no;
+    residualControl
+    {
+        p               1e-5;
+        U               1e-5;
+        "(k|omega|epsilon)" 1e-5;
+    }
+
+    nNonOrthogonalCorrectors 2;   // back to 2: mesh has a 70.8deg non-orth face + skew (diverged at 1)
+    pRefCell        0;
+    pRefValue       0;
+
+}
+
+relaxationFactors
+{
+    fields
+    {
+        p               0.5;
+    }
+    equations
+    {
+        U               0.7;
+        "(k|omega|epsilon).*" 0.7;
+    }
+}
+
+cache
+{
+    grad(U);
+}
+
+// ************************************************************************* //

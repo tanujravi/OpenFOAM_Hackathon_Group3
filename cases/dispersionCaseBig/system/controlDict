@@ -1,0 +1,33 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 | scalarTransportFoam dispersion (single hour)
+\*---------------------------------------------------------------------------*/
+FoamFile { version 2.0; format ascii; class dictionary; object controlDict; }
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// The frozen nut copied from the flow case carries atmNutkWallFunction on
+// Terrain, so the atmospheric BC library must be loaded to read the fields.
+libs            (atmosphericModels);
+
+application     scalarTransportFoam;
+
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         2000;          // steadyState iters; residualControl stops earlier
+deltaT          1;
+
+writeControl    timeStep;
+writeInterval   500;
+purgeWrite      2;
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable true;
+
+functions
+{
+    #include "receptors"
+}
+
+// ************************************************************************* //

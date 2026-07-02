@@ -1,0 +1,30 @@
+/*------ fvOptions: vegetation pollutant uptake (vegetationZone) ------*/
+FoamFile { version 2.0; format ascii; class dictionary; object fvOptions; }
+//
+// FINITE canopy deposition: a first-order dry-deposition sink -lambda*T in the canopy
+// cells (physical -- pollutant is reduced by leaf uptake, NOT annihilated). The source
+// term is  Su + Sp*T  with  (Su Sp) = (0  -lambda), so it adds  -lambda*T  to the T eqn.
+//   lambda [1/s] ~ deposition_velocity * leaf_area_density  (tune from canopy data;
+//   e.g. vd~0.001-0.01 m/s, LAD~0.5-2 m2/m3 -> lambda ~ 5e-4 .. 2e-2). Default 1e-3.
+// scalarTransportFoam solves 'T', so the source targets T (the snapshot is renamed to
+// T_<poll> only afterwards).
+//
+vegetationUptake
+{
+    type            scalarSemiImplicitSource;
+    selectionMode   cellZone;
+    cellZone        vegetationZone;
+    volumeMode      specific;                 // Su/Sp are per unit volume
+    injectionRateSuSp
+    {
+        T           (0 -1e-3);                // (Su Sp) -> source = -lambda*T, lambda = 1e-3 [1/s]
+    }
+}
+// PERFECT-SINK alternative (annihilates all pollutant in the canopy -- unphysical, initial trial):
+// vegetationUptake
+// {
+//     type            scalarFixedValueConstraint;
+//     selectionMode   cellZone;
+//     cellZone        vegetationZone;
+//     fieldValues     { T 0; }
+// }

@@ -70,6 +70,7 @@ def main():
     ap.add_argument("--DT", type=float, default=1.0)
     ap.add_argument("--unit-scale", type=float, default=1.0 / 3.6e6)  # g/h -> kg/s
     ap.add_argument("--face-map", default=None)
+    ap.add_argument("--field", default=None, help="explicit T file to edit (default <case>/0/T; transient uses a restart time dir)")
     args = ap.parse_args()
 
     fmap = args.face_map or os.path.join(args.case, "geo", "streets_face_segments.csv")
@@ -88,7 +89,7 @@ def main():
         flux = (vals[seg] * args.unit_scale) / A if A > 0 else 0.0
         grads.append(flux / args.DT)
 
-    t_path = os.path.join(args.case, "0", "T")
+    t_path = args.field or os.path.join(args.case, "0", "T")
     write_nonuniform_gradient(t_path, grads)
     print("pollutant=%s hour='%s' scenario=%s DT=%g unit_scale=%.6g"
           % (args.pollutant, hour_label, args.scenario, args.DT, args.unit_scale))

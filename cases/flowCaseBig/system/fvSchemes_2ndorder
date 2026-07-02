@@ -1,0 +1,27 @@
+FoamFile { version 2.0; format ascii; class dictionary; object fvSchemes; }
+// 2nd-ORDER schemes (accurate). Use as a RESTART after the 1st-order warm-up.
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+ddtSchemes      { default steadyState; }
+gradSchemes
+{
+    default     cellLimited Gauss linear 1;
+    limited     cellLimited Gauss linear 1;
+    grad(U)     $limited;
+    grad(k)     $limited;
+    grad(epsilon) $limited;
+}
+divSchemes
+{
+    default          none;
+    div(phi,U)       bounded Gauss linearUpwindV limited;
+    turbulence       bounded Gauss limitedLinear 1;
+    div(phi,k)       $turbulence;
+    div(phi,epsilon) $turbulence;
+    div(phi,omega)   $turbulence;
+    div((nuEff*dev2(T(grad(U))))) Gauss linear;
+}
+laplacianSchemes     { default Gauss linear limited 0.5; }
+interpolationSchemes { default linear; }
+snGradSchemes        { default limited 0.5; }
+wallDist             { method meshWave; }
+// ************************************************************************* //

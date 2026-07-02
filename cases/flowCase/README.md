@@ -1,4 +1,4 @@
-# flowCase — wind precursor (`simpleFoam`, ABL inlet, k-ε)
+# flowCase - wind precursor (`simpleFoam`, ABL inlet, k-ε)
 
 Steady RANS that produces the **hourly wind field** the dispersion stage advects on.
 This case also holds the mesh (built here by `runallgeo.sh`) that the dispersion case
@@ -19,7 +19,7 @@ terrain and does **not** appear in the fields.
 
 ## Boundary conditions (`0/`)
 Single cylindrical boundary, handled with OpenFOAM's flux-aware **atmospheric** BCs
-(the `cases/round` template): the ABL log-law profile is imposed where flow enters and
+(the Rotterdam case example, `cases/round`): the ABL log-law profile is imposed where flow enters and
 zero-gradient where it leaves, so one fixed mesh handles every hourly wind direction.
 Needs `libs (atmosphericModels);` in `controlDict`.
 
@@ -36,19 +36,19 @@ hourly wind is the only per-run change:
 `python3 ../tools/set_wind.py --case . --hour H` writes `Uref=|(u,v)|`,
 `angle=atan2(v,u)`.
 
-## Solver robustness — two-stage schemes
+## Solver robustness - two-stage schemes
 Starting fully 2nd-order on this stiff mesh diverges (k/ε overshoot → `nut` blow-up →
 GAMG floating-point exception ~iter 10). So:
-- `system/fvSchemes_1storder` — upwind `k`/`epsilon` (bounded), the **warm-up**.
-- `system/fvSchemes_2ndorder` — `limitedLinear` (accurate), the **restart**.
-- `system/fvSchemes` — currently = the 1st-order set (active default).
+- `system/fvSchemes_1storder` - upwind `k`/`epsilon` (bounded), the **warm-up**.
+- `system/fvSchemes_2ndorder` - `limitedLinear` (accurate), the **restart**.
+- `system/fvSchemes` - currently = the 1st-order set (active default).
 
 `job_flow.sh` runs the full recipe: **carve the `streets` patch (one-time, before
 solving)** → `decomposePar → potentialFoam → simpleFoam` (1st-order) → swap to
 2nd-order, bump `endTime`, restart from `latestTime` → `reconstructPar`.
 
 ## Street patch carved here (before the solve)
-`job_flow.sh` first carves `streets` out of `Terrain` (idempotent — skipped if the
+`job_flow.sh` first carves `streets` out of `Terrain` (idempotent - skipped if the
 patch already exists): `foamFormatConvert` to ASCII if needed →
 `make_street_patches.py` → `createPatch -overwrite` → `add_streets_bc.py` (clones the
 `Terrain` boundary entry into `streets` for the uniform `0/{U,p,k,epsilon,nut}`).

@@ -1,0 +1,232 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | Guimaraes small domain -- RECENTRED frame
+     \\/     M anipulation  | (adapted from the source-city template)
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      snappyHexMeshDict;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+/*----------------- Refinement-box envelope (recentred frame) -------------------*/
+// Sized to the ROI buildings (X[-1523,1659] Y[-1244,1091] Z[15,176]) + buffer.
+x_min  -1750;
+y_min  -1450;
+z_min  -10;
+x_max   1850;
+y_max   1300;
+z_max   280.0;
+
+K #calc "($z_max - $z_min)/$z_max";
+F 0.3;
+
+// box1 (closer, finer)
+x1_min #calc "$x_min - $K*$z_max";
+x1_max #calc "$x_max + $K*$z_max";
+y1_min #calc "$y_min - $K*$z_max";
+y1_max #calc "$y_max + $K*$z_max";
+z1_min $z_min;
+z1_max #calc "$z_max + $F*$K*$z_max";
+
+// box2 (wider, coarser)
+x2_min #calc "$x_min - 2*$K*$z_max";
+x2_max #calc "$x_max + 2*$K*$z_max";
+y2_min #calc "$y_min - 2*$K*$z_max";
+y2_max #calc "$y_max + 2*$K*$z_max";
+z2_min $z_min;
+z2_max #calc "$z_max + 1.2*$K*$z_max";
+
+castellatedMesh true;
+snap            true;
+addLayers       false;
+
+
+geometry
+{
+    box1
+    {
+        type searchableBox;
+        min ($x1_min $y1_min $z1_min);
+        max ($x1_max $y1_max $z1_max);
+    }
+
+    box2
+    {
+        type searchableBox;
+        min ($x2_min $y2_min $z2_min);
+        max ($x2_max $y2_max $z2_max);
+    }
+
+    Mesh_Buildings
+    {
+        file "Mesh_Buildings.obj";
+        type triSurfaceMesh;
+        regions
+        {
+            Buildings { name Buildings; }
+        }
+    }
+
+    Mesh_Terrain
+    {
+        file "Mesh_Terrain.obj";
+        type triSurfaceMesh;
+        regions
+        {
+            Terrain { name Terrain; }
+        }
+    }
+    // Mesh_Water / Mesh_Vegetation removed: no water surface is provided, and the
+    // canopy is modelled as a porous zone (not a wall) in a later step.
+}
+
+
+castellatedMeshControls
+{
+    maxLocalCells 20000000;
+    maxGlobalCells 200000000;
+    minRefinementCells 0;
+    maxLoadUnbalance 0.10;
+    nCellsBetweenLevels 4;
+
+    features
+    (
+        {
+            file "Mesh_Buildings.eMesh";
+            level 6;
+        }
+    );
+
+    refinementSurfaces
+    {
+        Mesh_Buildings
+        {
+            level (0 0);
+            regions
+            {
+                Buildings
+                {
+                    level (6 6);
+                    patchInfo { type wall; }
+                }
+            }
+        }
+
+        Mesh_Terrain
+        {
+            level (0 0);
+            regions
+            {
+                Terrain
+                {
+                    // Terrain spans the whole 6.3 km footprint -> level 4 (not 5)
+                    // to keep the cell count sane; raise locally via the
+                    // distance region below if the ground needs more detail.
+                    level (2 2);
+                    patchInfo { type wall; }
+                }
+            }
+        }
+    }
+
+    resolveFeatureAngle 30;
+
+    refinementRegions
+    {
+        box1
+        {
+            mode inside;
+            levels ((1E15 5));
+        }
+
+        box2
+        {
+            mode inside;
+            levels ((1E15 4));
+        }
+
+        Mesh_Buildings
+        {
+            mode distance;
+            levels ((6.0 6) (15.0 5) (40.0 4));
+        }
+
+        Mesh_Terrain
+        {
+            mode distance;
+            levels ((8.0 2));
+        }
+    }
+
+    // Air point: above the highest terrain (470 m), inside the cylinder (r=3000),
+    // well below the domain top (~1870 m).
+    locationInMesh (123.4 57.3 600);
+    allowFreeStandingZoneFaces true;
+}
+
+snapControls
+{
+    nSmoothPatch 5;
+    tolerance 4.0;
+    nSolveIter 50;
+    nRelaxIter 15;
+    nFeatureSnapIter 15;
+    implicitFeatureSnap false;
+    explicitFeatureSnap true;
+    multiRegionFeatureSnap false;
+}
+
+addLayersControls
+{
+    relativeSizes true;
+    expansionRatio 1.2;
+    firstLayerThickness 0.4;
+    minThickness 0.4;
+    layers{}
+    nGrow 0;
+    featureAngle 130;
+    maxFaceThicknessRatio 0.5;
+    nSmoothSurfaceNormals 1;
+    nSmoothThickness 10;
+    minMedialAxisAngle 90;
+    maxThicknessToMedialRatio 0.3;
+    nSmoothNormals 3;
+    slipFeatureAngle 30;
+    nRelaxIter 5;
+    nBufferCellsNoExtrude 0;
+    nLayerIter 50;
+    nRelaxedIter 20;
+}
+
+meshQualityControls
+{
+    maxNonOrtho 65;
+    maxBoundarySkewness 5;
+    maxInternalSkewness 4;
+    maxConcave 80;
+    minVol 1e-13;
+    minTetQuality 1e-30;
+    minArea -1;
+    minTwist 0.05;
+    minDeterminant 0.001;
+    minFaceWeight 0.05;
+    minVolRatio 0.01;
+    minTriangleTwist -1;
+    minVolCollapseRatio 0.5;
+    nSmoothScale 4;
+    errorReduction 0.75;
+    relaxed
+    {
+        maxNonOrtho 75;
+    }
+}
+
+mergeTolerance 1e-6;
+
+// ************************************************************************* //

@@ -1,4 +1,4 @@
-# initialCase — wind precursor (`simpleFoam`)
+# initialCase - wind precursor (`simpleFoam`)
 
 Steady RANS (k-ω SST) that produces the **hourly wind field** the dispersion stage
 advects on. This case also holds the mesh (built here by `runallgeo.sh`) that the
@@ -29,7 +29,7 @@ family:
 | `omega` | `inletOutlet` | `omegaWallFunction` | `symmetry` |
 | `nut` | `calculated` | `nutkWallFunction` | `symmetry` |
 
-The hourly wind is the only per-run change — set it with
+The hourly wind is the only per-run change - set it with
 `python3 ../tools/set_wind.py --case . --hour H` (writes `0/U`).
 
 ## Key files

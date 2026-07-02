@@ -9,14 +9,10 @@ Outputs to dispersionCase/constant/triSurface/:
   receptors.json                   centroids + UTM + counts
 Ordered by descending size for stable IDs.
 """
-import json, os
+import json, os, argparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-GEO  = os.path.join(ROOT, "flowCase", "geo")
-ROI  = os.path.join(GEO, "ROI.obj")
-TRANSFORM = os.path.join(GEO, "transform.json")
-OUTDIR = os.path.join(ROOT, "dispersionCase", "constant", "triSurface")
 
 
 def load_obj(path):
@@ -58,6 +54,16 @@ def write_obj(path, name, vidx, V, F_sub, remap):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--geo", default=os.path.join(ROOT, "flowCase", "geo"),
+                    help="case geo/ dir with ROI.obj + transform.json")
+    ap.add_argument("--out", default=os.path.join(ROOT, "dispersionCase", "constant", "triSurface"),
+                    help="triSurface output dir")
+    args = ap.parse_args()
+    GEO = args.geo
+    ROI = os.path.join(GEO, "ROI.obj")
+    TRANSFORM = os.path.join(GEO, "transform.json")
+    OUTDIR = args.out
     os.makedirs(OUTDIR, exist_ok=True)
     V, F = load_obj(ROI)
     groups = components(len(V), F)
