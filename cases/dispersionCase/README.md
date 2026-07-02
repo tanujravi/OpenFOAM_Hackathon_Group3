@@ -1,4 +1,4 @@
-# dispersionCase — pollutant transport (`scalarTransportFoam`)
+# dispersionCase - pollutant transport (`scalarTransportFoam`)
 
 Transports a passive pollutant scalar `T` on the **frozen** wind field from
 `../flowCase`. The `streets` source patch is already carved into that flow mesh
@@ -14,9 +14,9 @@ Steady, first-order-upwind, residual-controlled. `controlDict` loads
 
 ## Flow → dispersion handoff (no carve here)
 `../run_single_hour.sh` copies in from `../flowCase`:
-- `constant/polyMesh` — the **already-split** `Terrain` + `streets` mesh,
-- `0/U`, `0/phi`, `0/nut` — frozen fields, written on that split mesh (sizes match),
-- `geo/streets_face_segments.csv` — the face → segment + area map from the flow carve.
+- `constant/polyMesh` - the **already-split** `Terrain` + `streets` mesh,
+- `0/U`, `0/phi`, `0/nut` - frozen fields, written on that split mesh (sizes match),
+- `geo/streets_face_segments.csv` - the face → segment + area map from the flow carve.
 
 > The `streets` patch is carved in `../flowCase` **before** the flow solve (see
 > `../../README.md` §6.1). Carving here instead would shrink `Terrain` after the

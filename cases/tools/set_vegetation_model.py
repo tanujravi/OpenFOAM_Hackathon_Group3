@@ -6,7 +6,7 @@ Switch the vegetation model for the big-domain cases, BEFORE meshing.
            'vegetationZone' cellZone (topoSet). No Vegetation patch, no veg surface
            in snappy. (Robust on the elevated-canopy / coarse far-field mesh.)
   wall   : canopy = a snapped 'Vegetation' noSlip wall with roughness z0 in the atm
-           wall functions (the 'round' / guideline method). Veg surface added to
+           wall functions (the Rotterdam case example / guideline method). Veg surface added to
            snappy; no fvOptions/topoSet.
 
 The two modes give DIFFERENT meshes (patch vs no-patch), so pick the mode, then

@@ -117,7 +117,25 @@ def main():
                          "matplotlib (NO ParaView rendering -> no OpenGL, no segfault on "
                          "headless nodes). Works serial or --decomposed parallel.")
     ap.add_argument("--grid", type=int, default=600, help="--extract raster: cells along the longer side")
+    ap.add_argument("--dump", default=None,
+                    help="extract-only: save the resampled slice to this .npz and SKIP matplotlib "
+                         "(plot separately with plot_slice.py, in a python that has matplotlib). "
+                         "Implies --extract.")
+    ap.add_argument("--bounds", nargs=4, type=float, default=None,
+                    metavar=("XMIN", "XMAX", "YMIN", "YMAX"),
+                    help="crop the map to these recentred x/y bounds (default: receptor extent + --pad)")
+    ap.add_argument("--pad", type=float, default=1200.0,
+                    help="padding [m] around the receptors when --bounds is not given (default 1200)")
+    ap.add_argument("--zband", type=float, default=300.0,
+                    help="terrain-follow: vertical search band [m] above the domain floor (default 300)")
+    ap.add_argument("--nz", type=int, default=40,
+                    help="terrain-follow: number of vertical sampling layers (default 40)")
+    ap.add_argument("--flat", action="store_true",
+                    help="legacy: sample a single FLAT z=--z plane instead of terrain-following "
+                         "(only sensible on near-flat terrain)")
     a = ap.parse_args()
+    if a.dump:
+        a.extract = True                    # --dump only makes sense on the GL-free extract path
     os.makedirs(a.out, exist_ok=True)
 
     foam = ensure_foam(a.case)
@@ -143,6 +161,11 @@ def main():
         safe(lambda: setattr(view, "OrientationAxesVisibility", 0), "hide orientation axes")
     avail = list(c2p.PointData.keys())
     print("point fields available: %s" % avail)
+    for _f in avail:                                    # true global range (no sampling) -> spot an empty field
+        try:
+            print("  range %-10s = %s" % (_f, tuple(c2p.PointData[_f].GetRange(0))))
+        except Exception as _e:
+            print("  range %-10s : %s" % (_f, _e))
 
     # receptor overlay sources for the RENDER path (extract mode overlays from receptors.json instead)
     receptors = []
@@ -233,13 +256,32 @@ def extract_plot(calc, ug, fld, a, t):
         from vtk.util.numpy_support import vtk_to_numpy
 
     b = calc.GetDataInformation().GetBounds()          # xmin,xmax,ymin,ymax,zmin,zmax (global)
-    dx, dy = (b[1] - b[0]), (b[3] - b[2])
+    # ---- horizontal crop: --bounds, else receptor extent + --pad, else full domain ----
+    xmin, xmax, ymin, ymax = b[0], b[1], b[2], b[3]
+    if a.bounds:
+        xmin, xmax, ymin, ymax = [float(v) for v in a.bounds]
+    else:
+        rj0 = _os.path.join(a.triSurface or "", "receptors.json")
+        if _os.path.isfile(rj0):
+            cs = [(m.get("centroid_recentred") or m.get("centroid")) for m in json.load(open(rj0))]
+            cs = [c for c in cs if c]
+            if cs:
+                xs = [c[0] for c in cs]; ys = [c[1] for c in cs]
+                xmin, xmax = min(xs) - a.pad, max(xs) + a.pad
+                ymin, ymax = min(ys) - a.pad, max(ys) + a.pad
+    dx, dy = (xmax - xmin), (ymax - ymin)
     nx = max(2, int(a.grid))
     ny = max(2, int(round(a.grid * (dy / dx)))) if dx > 0 else max(2, int(a.grid))
+
+    # ---- vertical: flat plane (legacy) or a near-ground band for terrain-following ----
+    if a.flat:
+        zlo = zhi = a.z; nz = 1
+    else:
+        zlo = b[4]; zhi = b[4] + a.zband; nz = max(4, int(a.nz))
     ri = ResampleToImage(registrationName="ri_" + fld, Input=calc)
     setp(ri, "UseInputBounds", 0)
-    ri.SamplingBounds = [b[0], b[1], b[2], b[3], a.z, a.z]
-    ri.SamplingDimensions = [nx, ny, 1]
+    ri.SamplingBounds = [xmin, xmax, ymin, ymax, zlo, zhi]
+    ri.SamplingDimensions = [nx, ny, nz]
     ri.UpdatePipeline(t)
 
     img = sm.Fetch(ri)
@@ -249,13 +291,55 @@ def extract_plot(calc, ug, fld, a, t):
         return                                          # non-root MPI rank (data is on rank 0)
     pd = img.GetPointData()
     if pd.GetArray(ug) is None:
-        print("WARN: %s not on the resampled slice (check --z / --time)" % ug); return
+        print("WARN: %s not on the resampled grid (check --time)" % ug); return
     vals = vtk_to_numpy(pd.GetArray(ug)).astype(float)
+    valid = np.ones(vals.shape[0], bool)
     msk = pd.GetArray("vtkValidPointMask")
     if msk is not None:
-        vals[vtk_to_numpy(msk) == 0] = np.nan
-    dims = img.GetDimensions()                          # (nx, ny, 1)
-    grid = vals.reshape(dims[1], dims[0])               # rows = y, cols = x
+        valid = vtk_to_numpy(msk) != 0
+    dims = img.GetDimensions()                          # (nx, ny, nz)
+
+    if a.flat:
+        vals[~valid] = np.nan
+        grid = vals.reshape(dims[1], dims[0])           # rows = y, cols = x
+    else:
+        # terrain-following near-ground: on real terrain a flat z-plane is underground
+        # over the ROI. Sample a 3-D band and, per (x,y) column, take the first VALID
+        # cell above the floor (the first fluid cell above the ground), then rise ~--z m.
+        v3 = vals.reshape(dims[2], dims[1], dims[0])     # (nz, ny, nx) ; x fastest in VTK image
+        ok3 = valid.reshape(dims[2], dims[1], dims[0]) & np.isfinite(v3)
+        nzc = dims[2]
+        dz = (zhi - zlo) / max(1, nzc - 1)
+        up = int(round(a.z / dz)) if dz > 0 else 0       # cells to rise above the ground cell
+        anyk = ok3.any(axis=0)                            # (ny,nx): columns with any valid cell
+        first = np.argmax(ok3, axis=0)                    # first valid k per column (0 if none)
+        ksel = np.clip(first + up, 0, nzc - 1)
+        grid = np.full((dims[1], dims[0]), np.nan)
+        jj, ii = np.where(anyk)
+        grid[jj, ii] = v3[ksel[jj, ii], jj, ii]
+        bad = anyk & ~np.isfinite(grid)                   # risen into an invalid pocket -> use ground cell
+        if bad.any():
+            jb, ib = np.where(bad); grid[jb, ib] = v3[first[jb, ib], jb, ib]
+        print("  terrain-follow: %d/%d columns hit ground (dz=%.1f m, rise=%d cells)"
+              % (int(anyk.sum()), anyk.size, dz, up))
+    b = [xmin, xmax, ymin, ymax, zlo, zhi]               # crop extent used downstream
+
+    if a.dump:                                          # extract-only: save numpy, plot elsewhere
+        rxy = []; rnm = []
+        rjp = _os.path.join(a.triSurface or "", "receptors.json")
+        if _os.path.isfile(rjp):
+            for m in json.load(open(rjp)):
+                c = m.get("centroid_recentred") or m.get("centroid")
+                if c:
+                    rxy.append([float(c[0]), float(c[1])]); rnm.append(str(m.get("site_name", ""))[:18])
+        outp = a.dump if a.dump.endswith(".npz") else a.dump + ".npz"
+        np.savez(outp, grid=grid, extent=np.array([b[0], b[1], b[2], b[3]], float),
+                 z=float(a.z), unit=a.unit, label=a.label, field=fld,
+                 no_log=int(bool(a.no_log)), cmap=a.cmap, dy_dx=float(dy / dx if dx > 0 else 1.0),
+                 recept_xy=np.array(rxy, float) if rxy else np.zeros((0, 2)),
+                 recept_names=np.array(rnm))
+        print("  dumped %s (grid %dx%d) -> plot with plot_slice.py" % (outp, dims[0], dims[1]))
+        return
 
     import matplotlib; matplotlib.use("Agg")
     import matplotlib.pyplot as plt

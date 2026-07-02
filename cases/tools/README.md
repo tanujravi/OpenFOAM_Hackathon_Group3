@@ -1,14 +1,14 @@
-# cases/tools — pre-processing, receptor sampling, reporting
+# cases/tools - pre-processing, receptor sampling, reporting
 
 Python/Bash tooling for the Guimarães air-quality study. Split into three groups:
 **case setup** (geometry, wind, emissions, streets), **receptor sampling** (surface +
 volume), and **reporting** (tables, maps, PDF). Dependency-light: the reporting/analysis
 scripts use `matplotlib`, `numpy` and (for the PDF) `reportlab`; everything else is
-stdlib. Paths are passed on the CLI — no hard-coding.
+stdlib. Paths are passed on the CLI - no hard-coding.
 
 ---
 
-## 1. Case setup (used by the flow/dispersion cases and the sweeps)
+## 1. Case setup (used by the flow/dispersion cases and the workflow)
 
 | Tool | What it does |
 |---|---|
@@ -22,12 +22,12 @@ stdlib. Paths are passed on the CLI — no hard-coding.
 | `split_inlet_outlet.py`, `clean_surface.py`, `set_vegetation_model.py` | inlet split, OBJ dedup, canopy porous/wall switch |
 
 S3 note: the integers in `road_ids_reduction.txt` are the **0-based `geo_id`** (= emission-CSV
-row index). Validated against the road geometry — the reduced set is predominantly the Circular
+row index). Validated against the road geometry - the reduced set is predominantly the Circular
 Urbana ring + one EN101 troço (the Metro-Bus corridor), not the full EN101.
 
 ---
 
-## 2. Receptor sampling — surface AND volume
+## 2. Receptor sampling - surface AND volume
 
 Two metrics; they agree on scenario %-changes within ~2 pp, so the **volume average is the
 primary reported metric** (breathing-air exposure) and the surface areaAverage is a robustness
@@ -50,12 +50,12 @@ python3 make_receptor_zones.py --disp ../dispersionCaseBig --out ../dispersionCa
 - Box = receptor centroid ± `--halfwidth` in x,y and `[z-below, z+height]` (ROI cells ~5 m, so
   keep it a few cells tall). `--exclude-zone` subtracts a cellZone (e.g. canopy) from the box.
 - **Two modes** (same file, different flags):
-  - *Snapshot* (default): field token `__FIELD__` + a `readFields` FO — for post-processing
+  - *Snapshot* (default): field token `__FIELD__` + a `readFields` FO - for post-processing
     already-finished runs.
   - *During-solve*: `--field T --no-readfields --wire-controldict <disp>/system/controlDict`
-    — the FO rides along in the solve on the live `T` (used by `Snakefile.podrun`).
+    - the FO rides along in the solve on the live `T` (used by `Snakefile.podrun`).
 
-**Collect from FINISHED snapshots** (no re-solve) — `run_receptor_volumes.sh`:
+**Collect from FINISHED snapshots** (no re-solve) - `run_receptor_volumes.sh`:
 ```bash
 FIXHDR=0 bash run_receptor_volumes.sh <MESH=flowCaseBig> <DISP=dispersionCaseBig> \
     <DISPROOT=runs_pod/disp> <out.csv> <HOURS> "CO NOx" <NP> <SCENARIO>
@@ -64,8 +64,8 @@ It `topoSet`s the zones into the shared mesh, then `postProcess -time 0 -paralle
 `T_<poll>` snapshot (a `readFields` FO loads the field, since `postProcess` doesn't auto-read).
 `FIXHDR=0` skips the (slow, optional) FoamFile-header fix; `HDRJOBS` parallelizes it if needed.
 
-**Collect from a NEW solve** (values written during the run) — `collect_receptor_volumes.sh
-<DISP> <DISPROOT> <out.csv> <HOURS> "CO NOx" <SCENARIO>` — just reads `postProcessing/roiN_vol`.
+**Collect from a NEW solve** (values written during the run) - `collect_receptor_volumes.sh
+<DISP> <DISPROOT> <out.csv> <HOURS> "CO NOx" <SCENARIO>` - just reads `postProcessing/roiN_vol`.
 
 Both collectors write the report schema: `hour,scenario,pollutant,receptor,site,conc_ugm3`.
 
@@ -95,19 +95,18 @@ python3 make_techreport.py --report report --maps report/figs \
     --out report/technical_report.pdf
 ```
 
-- `make_report.py` — per receptor/pollutant: mean & peak over the sampled hours, %change vs
+- `make_report.py` - per receptor/pollutant: mean & peak over the sampled hours, %change vs
   reference for S1/S2/S3; figures: grouped bars, %-change heatmap, diurnal profiles (24 h clock,
   hour 0 = 07:00). Reads `receptors_long.csv` **or** a run dir (scans `postProcessing`).
-- `make_maps.py` — `map_pollution.png` (network + S3 corridor + receptors coloured by concentration)
+- `make_maps.py` - `map_pollution.png` (network + S3 corridor + receptors coloured by concentration)
   and `map_scenarios.png` (receptors per scenario, shared scale). Overlay uses `centroid_recentred`
   from `receptors.json` (same frame as the mesh).
-- `make_techreport.py` — reportlab PDF: exec summary, methodology, scenarios, results (tables +
+- `make_techreport.py` - reportlab PDF: exec summary, methodology, scenarios, results (tables +
   Fig 1 bars, Fig 2 heatmap, Fig 3/4 maps, optional Fig 5 ground slice), §4.4 sensitivity
   (`--compare-summary` = surface vs volume), discussion, limitations. Headline numbers are
   computed from `receptor_summary.csv`.
 
-**Sweep/POD helpers:** `aggregate_day.py` (daily mean/peak + scenario comparison for the 24 h
-sweeps), `select_hours.py` (maximin hour selection for POD).
+**POD helper:** `select_hours.py` (maximin hour selection for the POD-snapshot run).
 
 ---
 

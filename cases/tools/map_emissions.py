@@ -13,7 +13,7 @@ Row order == segment order == road_segments.csv order. Road ID == 0-based row
 index (IDs in road_ids_reduction.txt go up to 192 < 196 -> consistent; validate
 once before trusting S3).
 
-Scenario scaling (per CLAUDE.md):
+Scenario scaling:
   reference : x1.0 everywhere
   S1        : x0.8 everywhere   (20% of gas vehicles -> EV)
   S2        : x0.6 everywhere   (40% -> EV)

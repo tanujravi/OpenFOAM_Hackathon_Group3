@@ -1,9 +1,9 @@
-# flowCaseBig — wind precursor on the BIG (25 km city4CFD) domain
+# flowCaseBig - wind precursor on the BIG (25 km city4CFD) domain
 
 Same pipeline as `../flowCase`, on the larger **25.2 × 25.2 km** city4CFD terrain
 (`bigger_terrain_results/`), to study how domain size / boundary distance changes the
 receptor results. **Recentred frame** (same X/Y origin as the small domain; Z0 =
-big-terrain min = 74.29 m). Vegetation is a **porous canopy zone** (not a wall — see below).
+big-terrain min = 74.29 m). Vegetation can be modelled two ways (a porous canopy zone or a roughness wall - see below).
 
 The 196 roads and 4 receptors are the **same** as the small domain (same CRS), so
 emission mapping and receptor sampling are identical; `../dispersionCaseBig`'s
@@ -19,21 +19,21 @@ Martins Sarmento, Santos Simões).
   `../tools/clean_surface.py` logic); terrain was already clean.
 - `system/blockMeshDict.m4`: `H=524`, inner square `s=1800` (covers the ROI),
   cylinder `Rcity=12500` m, **floor `z0=-150`** (see "bottom patch" below), top ≈ 1946 m.
-- `system/snappyHexMeshDict`: **far-field terrain coarse**, **fine at the ROI** — see
+- `system/snappyHexMeshDict`: **far-field terrain coarse**, **fine at the ROI** - see
   the table below. `locationInMesh (123.4 57.3 600)` (off the symmetry planes / grid
   lines, in the air).
 - Reused: `0/` ABL BCs (+ a new `bottom` entry), the emission CSVs + wind, and the
   tools.
 
-## Vegetation — two switchable models (porous | wall)
+## Vegetation - two switchable models (porous | wall)
 Pick the model **before meshing** with `../tools/set_vegetation_model.py --flow . --disp ../dispersionCaseBig --model porous|wall` (idempotent). The two modes give
 **different meshes**, so re-mesh the chosen flavour on x86.
-- `wall` = the `round`/guideline method: a snapped `Vegetation` noSlip wall with
+- `wall` = the Rotterdam case example / guideline method: a snapped `Vegetation` noSlip wall with
   roughness `z0` (`--z0`, forest~0.8). Adds the veg surface to snappy; flow-only.
-- `porous` (default here) = canopy as a cellZone momentum sink + T uptake (below).
+- `porous` = canopy as a cellZone momentum sink + T uptake (below).
 
 ### porous canopy zone
-Vegetation is **not** snapped as a wall — its surface drapes ~8 m above terrain across
+Vegetation is **not** snapped as a wall - its surface drapes ~8 m above terrain across
 the whole 25 km, so wall-snapping it in the coarse far field makes bad cells. It is a
 **porous momentum sink** instead:
 - `system/topoSetDict` builds a `vegetationZone` cellZone from `Mesh_Vegetation.obj`
@@ -74,7 +74,7 @@ spurious ground boundary layer).
 
 ## Meshing on the ARM nodes (memory-tight: ~30 GB / 48 cores)
 `runallgeo.sh` is tuned for these nodes:
-- `--mem=0` (grab all node RAM — without it SLURM caps at `DefMemPerCPU × ntasks`),
+- `--mem=0` (grab all node RAM - without it SLURM caps at `DefMemPerCPU × ntasks`),
   and **few ranks/node** (`--ntasks-per-node=12`): each rank holds the full
   building+terrain search trees, so packing 48/node OOMs. Budget ~8–10 M cells per node;
   a ~40 M mesh wants ~6–8 nodes. `scotch` decomposition balances cells/rank.
@@ -84,7 +84,7 @@ spurious ground boundary layer).
 
 ## Flow solve (`job_flow.sh`, runs on x86)
 - **4 nodes × 96 ranks** (`--mem=0`): `simpleFoam` is memory-bandwidth-bound, so spread
-  the ranks — 128 on one node saturates bandwidth (~8 s/iter); 4×96 → ~1–1.5 s/iter.
+  the ranks - 128 on one node saturates bandwidth (~8 s/iter); 4×96 → ~1–1.5 s/iter.
 - `fvSolution`: `residualControl 1e-5`, `nNonOrthogonalCorrectors 1` (re-check max
   non-orthogonality after the clean re-mesh; bump to 2 if it's still high).
 - Flow fields reconstructed in parallel: `srun redistributePar -reconstruct -latestTime -parallel`.
